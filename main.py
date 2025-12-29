@@ -1,7 +1,7 @@
 """
 Advanced Auto Filter Bot V3
 Complete EvaMaria-style bot with beautiful interactive UI
-FIXED VERSION - Better channel handling
+FIXED VERSION - Proper channel initialization timing
 """
 
 import asyncio
@@ -43,15 +43,22 @@ class Bot(Client):
 
     async def start(self):
         from config import LOG_CHANNEL, CHANNELS, FORCE_SUB_CHANNELS
-        await super().start()
-        me = await self.get_me()
         
+        # Start the client first
+        await super().start()
+        
+        # Get bot info
+        me = await self.get_me()
         self.username = me.username
         self.id = me.id
         self.mention = me.mention
         self.first_name = me.first_name
         
         LOGGER.info(f"✅ Bot Started as @{me.username}")
+        
+        # IMPORTANT: Wait for Pyrogram to fully initialize
+        LOGGER.info("⏳ Waiting for Pyrogram to initialize...")
+        await asyncio.sleep(2)  # Give Pyrogram time to fully connect
         
         # Setup database
         try:
@@ -63,11 +70,15 @@ class Bot(Client):
             LOGGER.error(f"❌ Database Error: {e}")
             self.db = None
         
-        # Verify channels with better error handling
+        # Now verify channels (after initialization is complete)
+        LOGGER.info("")
+        LOGGER.info("🔍 Verifying Channels...")
+        LOGGER.info("")
+        
         channel_verified = False
         for channel_id in CHANNELS:
             try:
-                LOGGER.info(f"🔄 Verifying channel {channel_id}...")
+                LOGGER.info(f"🔄 Checking channel {channel_id}...")
                 
                 # Try to get chat info
                 chat = await self.get_chat(channel_id)
@@ -132,17 +143,22 @@ class Bot(Client):
                 continue
         
         if not channel_verified:
+            LOGGER.warning("")
             LOGGER.warning("⚠️ No valid channel found! Bot will run but file sharing won't work.")
             LOGGER.warning("   Please fix channel configuration and restart bot.")
+            LOGGER.warning("")
+        else:
+            LOGGER.info("")
         
         # Verify force sub channels
         if FORCE_SUB_CHANNELS:
+            LOGGER.info("🔍 Verifying Force-Sub Channels...")
             for idx, channel_id in enumerate(FORCE_SUB_CHANNELS, 1):
                 if not channel_id or channel_id == 0:
                     continue
                     
                 try:
-                    LOGGER.info(f"🔄 Verifying force-sub channel {idx}: {channel_id}")
+                    LOGGER.info(f"🔄 Checking force-sub channel {idx}: {channel_id}")
                     chat = await self.get_chat(channel_id)
                     LOGGER.info(f"   ✅ Channel: {chat.title}")
                     
@@ -163,6 +179,7 @@ class Bot(Client):
                 except Exception as e:
                     LOGGER.warning(f"⚠️ Force-sub channel {channel_id} error: {e}")
                     LOGGER.warning(f"   Force subscribe may not work for this channel")
+            LOGGER.info("")
         
         # Log channel notification
         if LOG_CHANNEL:
@@ -182,7 +199,6 @@ class Bot(Client):
             except Exception as e:
                 LOGGER.warning(f"⚠️ Cannot send to log channel: {e}")
         
-        LOGGER.info("")
         LOGGER.info("=" * 50)
         LOGGER.info("🔥 BOT IS READY!")
         LOGGER.info(f"   Bot: @{me.username}")
