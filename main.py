@@ -1,12 +1,15 @@
 """
 Advanced Auto Filter Bot V3
-FIXED VERSION - Channels verified only when first used (like VJ-Filter-Bot)
+WITH DEBUG - To find why plugins don't load
 """
 
 import asyncio
 import logging
+import os
+import sys
 from pyrogram import Client, idle
 from pyrogram.enums import ParseMode
+
 
 ascii_art = """
 ██████╗░███████╗░█████╗░████████╗░░░█████╗░███╗░░██╗██╗███╗░░░███╗███████╗
@@ -16,6 +19,36 @@ ascii_art = """
 ██████╦╝███████╗██║░░██║░░░██║░░░░░██║░░██║██║░╚███║██║██║░╚═╝░██║███████╗
 ╚═════╝░╚══════╝╚═╝░░╚═╝░░░╚═╝░░░░░╚═╝░░╚═╝╚═╝░░╚══╝╚═╝╚═╝░░░░░╚═╝╚══════╝
 """
+
+# DEBUG: Check plugins folder BEFORE anything else
+print("\n" + "="*60)
+print("🔍 DEBUGGING PLUGINS FOLDER")
+print("="*60)
+print(f"Current working directory: {os.getcwd()}")
+print(f"Python executable: {sys.executable}")
+print(f"Python version: {sys.version}")
+print(f"\nChecking 'plugins' folder:")
+print(f"  - Exists: {os.path.exists('plugins')}")
+print(f"  - Is directory: {os.path.isdir('plugins')}")
+
+if os.path.exists('plugins'):
+    print(f"\n📂 Contents of 'plugins/' folder:")
+    try:
+        files = os.listdir('plugins')
+        for f in sorted(files):
+            full_path = os.path.join('plugins', f)
+            size = os.path.getsize(full_path)
+            print(f"  ✓ {f} ({size} bytes)")
+        print(f"\n  Total files: {len(files)}")
+    except Exception as e:
+        print(f"  ❌ Error reading folder: {e}")
+else:
+    print(f"\n❌ PLUGINS FOLDER NOT FOUND!")
+    print(f"\n📂 Contents of current directory:")
+    for item in sorted(os.listdir('.')):
+        print(f"  - {item}")
+
+print("="*60 + "\n")
 
 # Setup logging
 logging.basicConfig(
@@ -29,6 +62,12 @@ LOGGER = logging.getLogger(__name__)
 class Bot(Client):
     def __init__(self):
         from config import API_ID, API_HASH, BOT_TOKEN, WORKERS
+        
+        # DEBUG: Print plugin config
+        print(f"\n🔧 Initializing Pyrogram Client with:")
+        print(f"  - plugins path: 'plugins'")
+        print(f"  - plugins root: {os.path.abspath('plugins')}")
+        
         super().__init__(
             name="AdvanceAutoFilterBot",
             api_id=API_ID,
@@ -65,17 +104,15 @@ class Bot(Client):
             LOGGER.error(f"❌ Database Error: {e}")
             self.db = None
         
-        # DON'T verify channels on startup - just save them
-        # They'll be verified when first used (lazy loading like VJ-Filter-Bot)
+        # DON'T verify channels on startup
         if CHANNELS:
             LOGGER.info(f"📁 File Channels Configured: {len(CHANNELS)}")
-            # Just save the first channel ID for later use
             self.db_channel_id = CHANNELS[0]
         else:
             LOGGER.warning("⚠️ No file channels configured!")
             self.db_channel_id = None
         
-        # Same for force sub channels
+        # Force sub channels
         if FORCE_SUB_CHANNELS:
             LOGGER.info(f"📢 Force-Sub Channels Configured: {len(FORCE_SUB_CHANNELS)}")
         
@@ -104,11 +141,9 @@ class Bot(Client):
         LOGGER.info(f"   Channels: {len(CHANNELS) if CHANNELS else 0} configured")
         LOGGER.info("=" * 50)
         LOGGER.info("")
-        LOGGER.info("💡 Channels will be verified when first used")
-        LOGGER.info("")
     
     async def get_db_channel(self):
-        """Get database channel (lazy loading - only called when needed)"""
+        """Get database channel (lazy loading)"""
         if hasattr(self, 'db_channel'):
             return self.db_channel
         
@@ -116,7 +151,6 @@ class Bot(Client):
             LOGGER.error("❌ No database channel configured!")
             return None
         
-        # First time accessing - verify channel now
         try:
             LOGGER.info(f"🔄 Connecting to database channel {self.db_channel_id}...")
             self.db_channel = await self.get_chat(self.db_channel_id)
@@ -124,11 +158,6 @@ class Bot(Client):
             return self.db_channel
         except Exception as e:
             LOGGER.error(f"❌ Error accessing database channel: {e}")
-            LOGGER.error(f"   Channel ID: {self.db_channel_id}")
-            LOGGER.error(f"   Make sure:")
-            LOGGER.error(f"   1. Bot is admin in the channel")
-            LOGGER.error(f"   2. Channel ID is correct")
-            LOGGER.error(f"   3. Bot has required permissions")
             return None
 
     async def stop(self, *args):
