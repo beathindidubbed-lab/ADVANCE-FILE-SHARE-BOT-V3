@@ -1,13 +1,13 @@
 """
 Advanced Auto Filter Bot V3
-FIXED - Plugins will load properly
+FINAL - Plugins will load properly
 """
 
 import asyncio
 import logging
 from pyrogram import Client, idle
 from pyrogram.enums import ParseMode
-from pyromod import listen  # CRITICAL FIX - Required for client.listen()
+from pyromod import listen
 
 ascii_art = """
 ██████╗░███████╗░█████╗░████████╗░░░█████╗░███╗░░██╗██╗███╗░░░███╗███████╗
@@ -67,19 +67,12 @@ class Bot(Client):
         if CHANNELS:
             LOGGER.info(f"📁 File Channels Configured: {len(CHANNELS)}")
             self.db_channel_id = CHANNELS[0]
-            
-            # Initialize db_channel NOW (important for plugins)
-            try:
-                self.db_channel = await self.get_chat(self.db_channel_id)
-                LOGGER.info(f"✅ Channel Connected: {self.db_channel.title}")
-            except Exception as e:
-                LOGGER.error(f"❌ Cannot connect to channel: {e}")
         else:
             LOGGER.warning("⚠️ No file channels configured!")
             self.db_channel_id = None
         
         if FORCE_SUB_CHANNELS:
-            LOGGER.info(f"📢 Force-Sub Channels: {len(FORCE_SUB_CHANNELS)}")
+            LOGGER.info(f"📢 Force-Sub Channels Configured: {len(FORCE_SUB_CHANNELS)}")
         
         if LOG_CHANNEL and LOG_CHANNEL != 0:
             try:
@@ -98,12 +91,10 @@ class Bot(Client):
         LOGGER.info("🔥 BOT IS READY!")
         LOGGER.info(f"   Bot: @{me.username}")
         LOGGER.info(f"   Database: {'✅' if self.db else '❌'}")
-        LOGGER.info(f"   Channel: {'✅' if hasattr(self, 'db_channel') else '❌'}")
         LOGGER.info("=" * 50)
         LOGGER.info("")
     
     async def get_db_channel(self):
-        """Get database channel object"""
         if hasattr(self, 'db_channel'):
             return self.db_channel
         
@@ -126,7 +117,6 @@ class Bot(Client):
 bot = Bot()
 
 async def start_bot():
-    LOGGER.info(ascii_art)
     await bot.start()
     LOGGER.info("🔥 Running...")
     await idle()
