@@ -1,0 +1,103 @@
+{
+  "name": "Beat Anime Bot",
+  "description": "Advanced File Sharing Bot for Anime & Movies - by @Beat_Anime_Ocean",
+  "keywords": [
+    "telegram",
+    "auto-filter",
+    "file-share",
+    "pyrogram",
+    "mongodb",
+    "anime",
+    "beat-anime"
+  ],
+  "repository": "https://github.com/yourusername/BeatAnimeBot",
+  "logo": "https://telegra.ph/file/d8d2e9cc6d60741c7e77d.jpg",
+  "success_url": "https://t.me/Beat_Anime_Ocean",
+  "website": "https://t.me/beatAnime",
+  "env": {
+    "API_ID": {
+      "description": "Get from https://my.telegram.org",
+      "required": true
+    },
+    "API_HASH": {
+      "description": "Get from https://my.telegram.org",
+      "required": true
+    },
+    "BOT_TOKEN": {
+      "description": "Get from @BotFather",
+      "required": true
+    },
+    "DATABASE_URI": {
+      "description": "MongoDB URI from mongodb.com (free tier)",
+      "required": true
+    },
+    "DATABASE_NAME": {
+      "description": "Database name",
+      "value": "BeatAnimeBot"
+    },
+    "CHANNELS": {
+      "description": "File storage channel ID (starts with -100)",
+      "required": true
+    },
+    "ADMINS": {
+      "description": "Your user ID from @userinfobot",
+      "required": true
+    },
+    "FORCE_SUB_CHANNELS": {
+      "description": "@beatAnime & @Beat_hindi_dubbed channel IDs (space-separated)",
+      "value": "0"
+    },
+    "LOG_CHANNEL": {
+      "description": "Log channel ID (optional)",
+      "value": "0"
+    },
+    "SUPPORT_CHAT": {
+      "description": "Support username (without @)",
+      "value": "Beat_Anime_Ocean"
+    },
+    "UPDATES_CHANNEL": {
+      "description": "Updates channel (without @)",
+      "value": "beatAnime"
+    },
+    "BOT_PICS": {
+      "description": "Bot image URLs (space-separated)",
+      "value": "https://telegra.ph/file/d8d2e9cc6d60741c7e77d.jpg"
+    },
+    "PROTECT_CONTENT": {
+      "description": "Disable forwarding (True/False)",
+      "value": "True"
+    },
+    "HIDE_CAPTION": {
+      "description": "Hide captions (True/False)",
+      "value": "False"
+    },
+    "CUSTOM_CAPTION": {
+      "description": "Custom caption template",
+      "value": "📺 <b>{filename}</b>\n\n{previouscaption}\n\n📺 @beatAnime | 🎬 @Beat_hindi_dubbed\n👤 @Beat_Anime_Ocean"
+    },
+    "AUTO_DELETE_TIME": {
+      "description": "Auto-delete seconds (0=disabled)",
+      "value": "300"
+    },
+    "REQUEST_FSUB": {
+      "description": "Request join mode (True/False)",
+      "value": "False"
+    },
+    "WORKERS": {
+      "description": "Worker threads",
+      "value": "4"
+    }
+  },
+  "formation": {
+    "worker": {
+      "quantity": 1,
+      "size": "eco"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "stack": "heroku-22"
+}
