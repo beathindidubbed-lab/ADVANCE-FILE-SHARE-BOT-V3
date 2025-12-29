@@ -91,7 +91,6 @@ class Bot(Client):
         LOGGER.info("🔥 BOT IS READY!")
         LOGGER.info(f"   Bot: @{me.username}")
         LOGGER.info(f"   Database: {'✅' if self.db else '❌'}")
-        LOGGER.info(f"   Channel: {'✅' if hasattr(self, 'db_channel') else '❌'}")
         LOGGER.info("=" * 50)
         LOGGER.info("")
     
@@ -100,17 +99,12 @@ class Bot(Client):
         if hasattr(self, 'db_channel'):
             return self.db_channel
         
-        if not self.db_channel_id:
-            LOGGER.error("❌ No database channel!")
-            return None
         
         try:
             self.db_channel = await self.get_chat(self.db_channel_id)
             LOGGER.info(f"✅ Channel: {self.db_channel.title}")
             return self.db_channel
-        except Exception as e:
-            LOGGER.error(f"❌ Channel error: {e}")
-            return None
+        
 
     async def stop(self, *args):
         await super().stop()
