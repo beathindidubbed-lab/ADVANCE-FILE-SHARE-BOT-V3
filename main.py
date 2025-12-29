@@ -34,7 +34,7 @@ class Bot(Client):
             api_id=API_ID,
             api_hash=API_HASH,
             bot_token=BOT_TOKEN,
-            plugins=dict(root="plugins"),
+            plugins={"root": "plugins"},
             workers=WORKERS,
             parse_mode=ParseMode.HTML
         )
@@ -80,7 +80,7 @@ class Bot(Client):
             LOGGER.info(f"📢 Force-Sub Channels Configured: {len(FORCE_SUB_CHANNELS)}")
         
         # Log channel notification
-        if LOG_CHANNEL:
+        if LOG_CHANNEL and LOG_CHANNEL != 0:
             try:
                 await self.send_message(
                     LOG_CHANNEL,
