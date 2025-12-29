@@ -1,7 +1,6 @@
 """
 Advanced Auto Filter Bot V3
-Complete EvaMaria-style bot with beautiful interactive UI
-FIXED VERSION - Proper channel initialization timing
+FIXED VERSION - Channels verified only when first used (like VJ-Filter-Bot)
 """
 
 import asyncio
@@ -44,7 +43,7 @@ class Bot(Client):
     async def start(self):
         from config import LOG_CHANNEL, CHANNELS, FORCE_SUB_CHANNELS
         
-        # Start the client first
+        # Start the client
         await super().start()
         
         # Get bot info
@@ -56,10 +55,6 @@ class Bot(Client):
         
         LOGGER.info(f"✅ Bot Started as @{me.username}")
         
-        # IMPORTANT: Wait for Pyrogram to fully initialize
-        LOGGER.info("⏳ Waiting for Pyrogram to initialize...")
-        await asyncio.sleep(2)  # Give Pyrogram time to fully connect
-        
         # Setup database
         try:
             from database.database import Database
@@ -70,116 +65,19 @@ class Bot(Client):
             LOGGER.error(f"❌ Database Error: {e}")
             self.db = None
         
-        # Now verify channels (after initialization is complete)
-        LOGGER.info("")
-        LOGGER.info("🔍 Verifying Channels...")
-        LOGGER.info("")
-        
-        channel_verified = False
-        for channel_id in CHANNELS:
-            try:
-                LOGGER.info(f"🔄 Checking channel {channel_id}...")
-                
-                # Try to get chat info
-                chat = await self.get_chat(channel_id)
-                self.db_channel = chat
-                
-                LOGGER.info(f"✅ Channel Found!")
-                LOGGER.info(f"   📝 Title: {chat.title}")
-                LOGGER.info(f"   🆔 ID: {channel_id}")
-                LOGGER.info(f"   🔗 Type: {chat.type}")
-                if chat.username:
-                    LOGGER.info(f"   👤 Username: @{chat.username}")
-                
-                # Test bot permissions
-                try:
-                    me_member = await self.get_chat_member(channel_id, "me")
-                    LOGGER.info(f"   🤖 Bot Status: {me_member.status}")
-                    
-                    if me_member.status == "administrator":
-                        LOGGER.info(f"   ✅ Bot is Admin!")
-                        if me_member.privileges:
-                            LOGGER.info(f"   - Post Messages: {me_member.privileges.can_post_messages}")
-                            LOGGER.info(f"   - Edit Messages: {me_member.privileges.can_edit_messages}")
-                            LOGGER.info(f"   - Delete Messages: {me_member.privileges.can_delete_messages}")
-                    else:
-                        LOGGER.warning(f"   ⚠️ Bot is NOT admin! Status: {me_member.status}")
-                        LOGGER.warning(f"   Please make bot admin in the channel!")
-                except Exception as perm_error:
-                    LOGGER.warning(f"   ⚠️ Cannot check bot permissions: {perm_error}")
-                
-                # Test by reading messages
-                try:
-                    message_count = 0
-                    async for message in self.get_chat_history(channel_id, limit=1):
-                        message_count += 1
-                        LOGGER.info(f"   ✅ Channel Access Verified! (Found message ID: {message.id})")
-                        break
-                    
-                    if message_count == 0:
-                        LOGGER.warning(f"   ⚠️ Channel is empty or bot cannot read messages")
-                        LOGGER.info(f"   💡 This is OK if channel is new. Bot can still work!")
-                        
-                except Exception as read_error:
-                    LOGGER.warning(f"   ⚠️ Cannot read channel messages: {read_error}")
-                    LOGGER.info(f"   💡 Bot may still work for sending files")
-                
-                channel_verified = True
-                LOGGER.info(f"✅ File Channel Setup Complete!")
-                break
-                
-            except Exception as e:
-                LOGGER.error(f"❌ Error accessing channel {channel_id}")
-                LOGGER.error(f"   Error: {e}")
-                LOGGER.error(f"   ")
-                LOGGER.error(f"   🔧 Troubleshooting Steps:")
-                LOGGER.error(f"   1. Make sure bot is admin in the channel")
-                LOGGER.error(f"   2. Give bot these permissions:")
-                LOGGER.error(f"      - Post Messages")
-                LOGGER.error(f"      - Edit Messages")
-                LOGGER.error(f"      - Delete Messages")
-                LOGGER.error(f"   3. Check if channel ID is correct")
-                LOGGER.error(f"   4. Verify channel is not deleted")
-                continue
-        
-        if not channel_verified:
-            LOGGER.warning("")
-            LOGGER.warning("⚠️ No valid channel found! Bot will run but file sharing won't work.")
-            LOGGER.warning("   Please fix channel configuration and restart bot.")
-            LOGGER.warning("")
+        # DON'T verify channels on startup - just save them
+        # They'll be verified when first used (lazy loading like VJ-Filter-Bot)
+        if CHANNELS:
+            LOGGER.info(f"📁 File Channels Configured: {len(CHANNELS)}")
+            # Just save the first channel ID for later use
+            self.db_channel_id = CHANNELS[0]
         else:
-            LOGGER.info("")
+            LOGGER.warning("⚠️ No file channels configured!")
+            self.db_channel_id = None
         
-        # Verify force sub channels
+        # Same for force sub channels
         if FORCE_SUB_CHANNELS:
-            LOGGER.info("🔍 Verifying Force-Sub Channels...")
-            for idx, channel_id in enumerate(FORCE_SUB_CHANNELS, 1):
-                if not channel_id or channel_id == 0:
-                    continue
-                    
-                try:
-                    LOGGER.info(f"🔄 Checking force-sub channel {idx}: {channel_id}")
-                    chat = await self.get_chat(channel_id)
-                    LOGGER.info(f"   ✅ Channel: {chat.title}")
-                    
-                    # Try to get invite link
-                    try:
-                        invite = await self.create_chat_invite_link(channel_id)
-                        self.invitelink = invite.invite_link
-                        LOGGER.info(f"   ✅ Invite link created")
-                    except:
-                        if chat.username:
-                            self.invitelink = f"https://t.me/{chat.username}"
-                            LOGGER.info(f"   ✅ Using public link: @{chat.username}")
-                        else:
-                            LOGGER.warning(f"   ⚠️ Cannot create invite link")
-                            
-                    LOGGER.info(f"✅ Force-Sub Channel {idx} Ready!")
-                    
-                except Exception as e:
-                    LOGGER.warning(f"⚠️ Force-sub channel {channel_id} error: {e}")
-                    LOGGER.warning(f"   Force subscribe may not work for this channel")
-            LOGGER.info("")
+            LOGGER.info(f"📢 Force-Sub Channels Configured: {len(FORCE_SUB_CHANNELS)}")
         
         # Log channel notification
         if LOG_CHANNEL:
@@ -189,23 +87,49 @@ class Bot(Client):
                     f"<b>🤖 Bot Started Successfully!</b>\n\n"
                     f"<b>Bot:</b> @{me.username}\n"
                     f"<b>Name:</b> {me.first_name}\n"
-                    f"<b>ID:</b> <code>{me.id}</code>\n"
-                    f"<b>Mention:</b> {me.mention}\n\n"
+                    f"<b>ID:</b> <code>{me.id}</code>\n\n"
                     f"<b>Status:</b> ✅ Online\n"
                     f"<b>Database:</b> {'✅ Connected' if self.db else '❌ Not Connected'}\n"
-                    f"<b>File Channel:</b> {'✅ Ready' if channel_verified else '⚠️ Check Logs'}"
+                    f"<b>File Channels:</b> {len(CHANNELS) if CHANNELS else 0}"
                 )
                 LOGGER.info("✅ Log channel notification sent")
             except Exception as e:
                 LOGGER.warning(f"⚠️ Cannot send to log channel: {e}")
         
+        LOGGER.info("")
         LOGGER.info("=" * 50)
         LOGGER.info("🔥 BOT IS READY!")
         LOGGER.info(f"   Bot: @{me.username}")
         LOGGER.info(f"   Database: {'✅' if self.db else '❌'}")
-        LOGGER.info(f"   Channel: {'✅' if channel_verified else '❌'}")
+        LOGGER.info(f"   Channels: {len(CHANNELS) if CHANNELS else 0} configured")
         LOGGER.info("=" * 50)
         LOGGER.info("")
+        LOGGER.info("💡 Channels will be verified when first used")
+        LOGGER.info("")
+    
+    async def get_db_channel(self):
+        """Get database channel (lazy loading - only called when needed)"""
+        if hasattr(self, 'db_channel'):
+            return self.db_channel
+        
+        if not self.db_channel_id:
+            LOGGER.error("❌ No database channel configured!")
+            return None
+        
+        # First time accessing - verify channel now
+        try:
+            LOGGER.info(f"🔄 Connecting to database channel {self.db_channel_id}...")
+            self.db_channel = await self.get_chat(self.db_channel_id)
+            LOGGER.info(f"✅ Database Channel Connected: {self.db_channel.title}")
+            return self.db_channel
+        except Exception as e:
+            LOGGER.error(f"❌ Error accessing database channel: {e}")
+            LOGGER.error(f"   Channel ID: {self.db_channel_id}")
+            LOGGER.error(f"   Make sure:")
+            LOGGER.error(f"   1. Bot is admin in the channel")
+            LOGGER.error(f"   2. Channel ID is correct")
+            LOGGER.error(f"   3. Bot has required permissions")
+            return None
 
     async def stop(self, *args):
         await super().stop()
