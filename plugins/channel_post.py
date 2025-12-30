@@ -6,11 +6,11 @@ When admin forwards files to bot
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
-from bot import bot
+#from bot import bot
 from config import ADMINS, CHANNELS
 from utils.helpers import encode
 
-@bot.on_message(filters.private & filters.user(ADMINS) & (filters.document | filters.video | filters.audio))
+@Client.on_message(filters.private & filters.user(ADMINS) & (filters.document | filters.video | filters.audio))
 async def forward_to_channel(client: Client, message: Message):
     """Forward files to channel and generate link"""
     
@@ -82,7 +82,7 @@ async def forward_to_channel(client: Client, message: Message):
         )
 
 
-@bot.on_message(filters.channel & filters.forwarded & (filters.document | filters.video | filters.audio))
+@Client.on_message(filters.channel & filters.forwarded & (filters.document | filters.video | filters.audio))
 async def auto_generate_link(client: Client, message: Message):
     """Auto-generate link for forwarded messages in channel"""
     
