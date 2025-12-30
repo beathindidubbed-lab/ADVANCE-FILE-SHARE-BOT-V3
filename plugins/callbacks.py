@@ -5,10 +5,10 @@ Callback Query Handlers - Button Interactions
 from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
-from bot import bot
+#from bot import bot
 from config import *
 
-@bot.on_callback_query(filters.regex("^help$"))
+@Client.on_callback_query(filters.regex("^help$"))
 async def help_callback(client: Client, query: CallbackQuery):
     """Show help menu"""
     
@@ -48,7 +48,7 @@ async def help_callback(client: Client, query: CallbackQuery):
         await query.answer("❌ Error loading help menu!", show_alert=True)
 
 
-@bot.on_callback_query(filters.regex("^about$"))
+@Client.on_callback_query(filters.regex("^about$"))
 async def about_callback(client: Client, query: CallbackQuery):
     """Show about menu"""
     
@@ -88,7 +88,7 @@ async def about_callback(client: Client, query: CallbackQuery):
         await query.answer("❌ Error loading about menu!", show_alert=True)
 
 
-@bot.on_callback_query(filters.regex("^start$"))
+@Client.on_callback_query(filters.regex("^start$"))
 async def start_callback(client: Client, query: CallbackQuery):
     """Go back to start menu"""
     
@@ -135,7 +135,7 @@ async def start_callback(client: Client, query: CallbackQuery):
         await query.answer("❌ Error!", show_alert=True)
 
 
-@bot.on_callback_query(filters.regex("^close$"))
+@Client.on_callback_query(filters.regex("^close$"))
 async def close_callback(client: Client, query: CallbackQuery):
     """Close the message"""
     
