@@ -16,7 +16,16 @@ DATABASE_URI = environ.get("DATABASE_URI", "")
 DATABASE_NAME = environ.get("DATABASE_NAME", "AdvanceAutoFilterBot")
 
 # ============ CHANNELS ============
-CHANNELS = [int(ch) if ch.startswith("-") else int(ch) for ch in environ.get("CHANNELS", "-100").split()]
+# FIXED: Allow 0 or empty to skip channel requirement
+try:
+    channels_str = environ.get("CHANNELS", "0")
+    if channels_str and channels_str != "0":
+        CHANNELS = [int(ch) if ch.startswith("-") else int(ch) for ch in channels_str.split()]
+    else:
+        CHANNELS = [0]
+except:
+    CHANNELS = [0]
+
 LOG_CHANNEL = int(environ.get("LOG_CHANNEL", "0")) if environ.get("LOG_CHANNEL") else None
 
 # ============ ADMINS ============
