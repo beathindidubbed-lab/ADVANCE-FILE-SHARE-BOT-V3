@@ -6,13 +6,13 @@ EXACTLY like EvaMaria screenshots - /forcesub, /files, /auto_del, /req_fsub
 from pyrogram import Client, filters
 from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
-from bot import bot
+#from bot import bot
 from config import ADMINS, PROTECT_CONTENT, HIDE_CAPTION, AUTO_DELETE_TIME, REQUEST_FSUB
 import config
 
 # ========== MAIN SETTINGS COMMAND ==========
 
-@bot.on_message(filters.private & filters.user(ADMINS) & filters.command("settings"))
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("settings"))
 async def settings_command(client: Client, message: Message):
     """Main settings menu"""
     
@@ -51,7 +51,7 @@ async def settings_command(client: Client, message: Message):
 
 # ========== FORCE SUBSCRIBE SETTINGS (/forcesub command) ==========
 
-@bot.on_message(filters.private & filters.user(ADMINS) & filters.command("forcesub"))
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("forcesub"))
 async def forcesub_command(client: Client, message: Message):
     """Force subscribe settings - Like screenshot 7"""
     
@@ -83,7 +83,7 @@ async def forcesub_command(client: Client, message: Message):
     await message.reply_text(text, reply_markup=buttons, quote=True)
 
 
-@bot.on_callback_query(filters.regex("^setting_force_sub$"))
+@Client.on_callback_query(filters.regex("^setting_force_sub$"))
 async def force_sub_callback(client: Client, query: CallbackQuery):
     """Force subscribe settings panel"""
     
@@ -117,7 +117,7 @@ Force users to join your channel(s) before accessing files.
 
 # ========== REQUEST FORCE SUBSCRIBE (/req_fsub command) ==========
 
-@bot.on_message(filters.private & filters.user(ADMINS) & filters.command("req_fsub"))
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("req_fsub"))
 async def req_fsub_command(client: Client, message: Message):
     """Request force subscribe settings - Like screenshot 8"""
     
@@ -155,7 +155,7 @@ async def req_fsub_command(client: Client, message: Message):
     await message.reply_text(text, reply_markup=buttons, quote=True)
 
 
-@bot.on_callback_query(filters.regex("^req_fsub_(on|off)$"))
+@Client.on_callback_query(filters.regex("^req_fsub_(on|off)$"))
 async def req_fsub_toggle(client: Client, query: CallbackQuery):
     """Toggle request force subscribe"""
     
@@ -206,7 +206,7 @@ async def req_fsub_toggle(client: Client, query: CallbackQuery):
 
 # ========== FILES SETTINGS (/files command) ==========
 
-@bot.on_message(filters.private & filters.user(ADMINS) & filters.command("files"))
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("files"))
 async def files_command(client: Client, message: Message):
     """File settings - Like screenshot 9"""
     
@@ -256,7 +256,7 @@ async def files_command(client: Client, message: Message):
     await message.reply_text(text, reply_markup=buttons, quote=True)
 
 
-@bot.on_callback_query(filters.regex("^file_(protect|caption|channel)_(on|off)$"))
+@Client.on_callback_query(filters.regex("^file_(protect|caption|channel)_(on|off)$"))
 async def file_settings_toggle(client: Client, query: CallbackQuery):
     """Toggle file settings"""
     
@@ -330,7 +330,7 @@ async def file_settings_toggle(client: Client, query: CallbackQuery):
     await query.message.edit_text(text, reply_markup=buttons)
 
 
-@bot.on_callback_query(filters.regex("^files_refresh$"))
+@Client.on_callback_query(filters.regex("^files_refresh$"))
 async def files_refresh(client: Client, query: CallbackQuery):
     """Refresh file settings"""
     await query.answer("♻️ Refreshing...")
@@ -339,7 +339,7 @@ async def files_refresh(client: Client, query: CallbackQuery):
 
 # ========== AUTO DELETE SETTINGS (/auto_del command) ==========
 
-@bot.on_message(filters.private & filters.user(ADMINS) & filters.command("auto_del"))
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("auto_del"))
 async def auto_del_command(client: Client, message: Message):
     """Auto delete settings - Like screenshot 10"""
     
@@ -379,7 +379,7 @@ async def auto_del_command(client: Client, message: Message):
     await message.reply_text(text, reply_markup=buttons, quote=True)
 
 
-@bot.on_callback_query(filters.regex("^auto_del_"))
+@Client.on_callback_query(filters.regex("^auto_del_"))
 async def auto_del_callbacks(client: Client, query: CallbackQuery):
     """Handle auto delete callbacks"""
     
@@ -437,7 +437,7 @@ async def auto_del_callbacks(client: Client, query: CallbackQuery):
 
 # ========== BACK TO SETTINGS ==========
 
-@bot.on_callback_query(filters.regex("^file_set_button$"))
+@Client.on_callback_query(filters.regex("^file_set_button$"))
 async def file_set_button(client: Client, query: CallbackQuery):
     """Set custom button"""
     
@@ -509,7 +509,7 @@ Send <code>cancel</code> to cancel.
         await query.message.reply_text("❌ <b>Timeout!</b> No response received.")
 
 
-@bot.on_callback_query(filters.regex("^setting_"))
+@Client.on_callback_query(filters.regex("^setting_"))
 async def settings_callbacks(client: Client, query: CallbackQuery):
     """Handle main settings navigation"""
     
