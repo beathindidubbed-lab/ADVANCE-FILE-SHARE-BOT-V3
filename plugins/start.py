@@ -10,7 +10,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated
 
-from bot import bot
+#from bot import bot
 from config import *
 from utils.helpers import encode, decode, get_messages, delete_files, is_subscribed, get_readable_time
 
@@ -89,7 +89,7 @@ def format_caption_html(caption: str) -> str:
     
     return caption
 
-@bot.on_message(filters.command("start") & filters.private)
+@Client.on_message(filters.command("start") & filters.private)
 async def start_command(client: Client, message: Message):
     """Main start handler - welcome and file sharing"""
     
