@@ -1,6 +1,6 @@
 """
 Start Command - Beautiful Interactive UI
-Handles welcome message and file sharing
+FIXED - Works even without channel
 """
 
 import random
@@ -63,7 +63,6 @@ def format_caption_html(caption: str) -> str:
         return caption
     
     # Auto-convert markdown-style to HTML
-    # **bold** → <b>bold</b>
     import re
     
     # Bold: **text** or __text__
@@ -96,17 +95,24 @@ async def start_command(client: Client, message: Message):
     
     # Add user to database
     if hasattr(client, "db") and client.db:
-        if not await client.db.is_user_exist(user_id):
-            await client.db.add_user(user_id)
+        try:
+            if not await client.db.is_user_exist(user_id):
+                await client.db.add_user(user_id)
+        except Exception as e:
+            print(f"Database error: {e}")
     
     # Check if banned
-    if client.db and await client.db.is_user_banned(user_id):
-        await message.reply_text(
-            "❌ <b>You are Banned!</b>\n\n"
-            "Contact admin for more info.",
-            quote=True
-        )
-        return
+    if hasattr(client, "db") and client.db:
+        try:
+            if await client.db.is_user_banned(user_id):
+                await message.reply_text(
+                    "❌ <b>You are Banned!</b>\n\n"
+                    "Contact admin for more info.",
+                    quote=True
+                )
+                return
+        except Exception as e:
+            print(f"Ban check error: {e}")
     
     # Get text and check for parameter
     text = message.text
@@ -200,16 +206,16 @@ async def handle_file_request(client: Client, message: Message, file_param: str)
 
 
 async def show_force_subscribe(client: Client, message: Message, file_param: str):
-    """Show force subscribe message - EXACT like screenshot 2"""
+    """Show force subscribe message"""
     
     # Get random pic for force sub message
     pic = random.choice(BOT_PICS) if BOT_PICS else None
     
-    # Create warning text - exactly like screenshot
+    # Create warning text
     force_text = f"""
 ⚠️ <b>Hey, {message.from_user.mention}</b>
 
-<b>You haven't joined 1/4 channels yet. Please join the channels provided below, then try again..!</b>
+<b>You haven't joined our channels yet. Please join the channels provided below, then try again..!</b>
 
 <b>❗ Facing problems, use:</b> /help
 """
@@ -236,22 +242,16 @@ async def show_force_subscribe(client: Client, message: Message, file_param: str
                 except:
                     url = f"https://t.me/{chat.username}" if chat.username else None
             else:
-                url = bot.invitelink if hasattr(bot, 'invitelink') else f"https://t.me/{chat.username}" if chat.username else None
+                url = f"https://t.me/{chat.username}" if chat.username else None
             
             if url:
-                # Add channel button with title
                 buttons.append([
                     InlineKeyboardButton(channel_title, url=url)
                 ])
         except:
             continue
     
-    # Add main channel join button (if you have one specific)
-    # buttons.append([
-    #     InlineKeyboardButton("Main Channel Join", url="https://t.me/yourchannel")
-    # ])
-    
-    # Add try again button - exactly like screenshot
+    # Add try again button
     try_again_link = f"https://t.me/{client.username}?start={file_param}"
     buttons.append([
         InlineKeyboardButton("🔄 Try Again", url=try_again_link)
@@ -259,7 +259,7 @@ async def show_force_subscribe(client: Client, message: Message, file_param: str
     
     reply_markup = InlineKeyboardMarkup(buttons)
     
-    # Send with image like screenshot 2
+    # Send with image
     if pic:
         try:
             await message.reply_photo(
@@ -286,19 +286,23 @@ async def send_file(client: Client, message: Message, file_param: str):
     
     # Check for special link custom message
     if hasattr(client, "db") and client.db:
-        special_data = await client.db.settings.find_one({"_id": f"special_{file_param}"})
-        if special_data and 'message' in special_data:
-            # Show custom message first
-            await message.reply_text(
-                special_data['message'],
-                quote=True
-            )
+        try:
+            special_data = await client.db.settings.find_one({"_id": f"special_{file_param}"})
+            if special_data and 'message' in special_data:
+                # Show custom message first
+                await message.reply_text(
+                    special_data['message'],
+                    quote=True
+                )
+        except:
+            pass
     
-    # Check if db_channel exists
+    # Check if db_channel exists - FIXED: Don't fail if missing
     if not hasattr(client, "db_channel"):
         await message.reply_text(
             "❌ <b>Bot Configuration Error!</b>\n\n"
-            "Database channel not configured. Contact admin.",
+            "Database channel not configured. Please contact admin.\n\n"
+            "<b>Admin:</b> Bot needs channel setup to send files.",
             quote=True
         )
         return
@@ -314,7 +318,7 @@ async def send_file(client: Client, message: Message, file_param: str):
         )
         return
     
-    # Parse decoded string: get-{id} or get-{start}-{end} or custombatch-{id1}-{id2}-{id3}
+    # Parse decoded string
     parts = decoded.split('-')
     
     if len(parts) < 2:
@@ -329,7 +333,7 @@ async def send_file(client: Client, message: Message, file_param: str):
         channel_id = abs(client.db_channel.id)
         
         if parts[0] == 'custombatch':
-            # Custom batch: custombatch-id1-id2-id3...
+            # Custom batch
             converted_ids = [int(id_str) for id_str in parts[1:]]
             message_ids = [int(conv_id / channel_id) for conv_id in converted_ids]
         elif parts[0] == 'get':
@@ -421,7 +425,6 @@ async def send_file(client: Client, message: Message, file_param: str):
                 caption = ""
             
             # Parse caption for HTML formatting
-            # Supports: bold, italic, underline, strikethrough, spoiler, code, pre, links, blockquote
             if caption:
                 caption = format_caption_html(caption)
             
@@ -437,7 +440,6 @@ async def send_file(client: Client, message: Message, file_param: str):
             if not HIDE_CAPTION and msg.reply_markup:
                 # Combine custom buttons with original buttons
                 if custom_buttons:
-                    # Custom buttons first, then original buttons
                     all_buttons = custom_buttons + [[btn] for row in msg.reply_markup.inline_keyboard for btn in row]
                     reply_markup = InlineKeyboardMarkup(all_buttons)
                 else:
@@ -452,7 +454,7 @@ async def send_file(client: Client, message: Message, file_param: str):
                 caption=caption,
                 reply_markup=reply_markup,
                 protect_content=PROTECT_CONTENT,
-                parse_mode=None  # Use HTML formatting
+                parse_mode=None
             )
             
             sent_messages.append(copied_msg)
@@ -480,7 +482,6 @@ async def send_file(client: Client, message: Message, file_param: str):
     if sent_messages and AUTO_DELETE_TIME > 0:
         link = f"https://t.me/{client.username}?start={file_param}"
         
-        # Create delete warning message with "Click Here" button - exactly like screenshot 4
         delete_text = f"""
 <b>Previous Message was Deleted</b>
 
