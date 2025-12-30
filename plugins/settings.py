@@ -289,9 +289,9 @@ async def file_settings_toggle(client: Client, query: CallbackQuery):
     await query.answer(f"✅ Setting updated!")
     
     # Refresh display
-    protect = await client.db.get_setting("protect_content") if bot.db else PROTECT_CONTENT
-    hide_caption = await client.db.get_setting("hide_caption") if bot.db else HIDE_CAPTION
-    channel_btn = await client.db.get_setting("channel_button") if bot.db else True
+    protect = await client.db.get_setting("protect_content") if client.db else PROTECT_CONTENT
+    hide_caption = await client.db.get_setting("hide_caption") if client.db else HIDE_CAPTION
+    channel_btn = await client.db.get_setting("channel_button") if client.db else True
     
     protect_icon = "❌" if protect else "✅"
     hide_icon = "❌" if hide_caption else "✅"
