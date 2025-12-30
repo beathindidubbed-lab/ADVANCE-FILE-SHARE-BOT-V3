@@ -1,11 +1,12 @@
 """
 Advanced Auto Filter Bot V3
-FIXED - Plugins will load properly with manual import system
+FIXED - Bot starts even if channel fails
 """
 
 import sys
 import glob
 import importlib
+import importlib.util
 import logging
 import asyncio
 from pathlib import Path
@@ -49,8 +50,7 @@ class Bot(Client):
             api_hash=API_HASH,
             bot_token=BOT_TOKEN,
             workers=WORKERS,
-            parse_mode=ParseMode.HTML,
-            plugins=None  # We'll load manually
+            parse_mode=ParseMode.HTML
         )
         self.LOGGER = LOGGER
 
@@ -75,18 +75,16 @@ class Bot(Client):
             LOGGER.info("✅ Database Connected")
         except Exception as e:
             LOGGER.error(f"❌ Database Error: {e}")
+            LOGGER.warning("⚠️ Bot will continue without database")
             self.db = None
         
-        # Setup channels
+        # Setup channels (non-blocking)
         if CHANNELS:
             LOGGER.info(f"📁 File Channels Configured: {len(CHANNELS)}")
             self.db_channel_id = CHANNELS[0]
             
-            # Get channel details
-            try:
-                await self.get_db_channel()
-            except Exception as e:
-                LOGGER.error(f"❌ Error getting channel: {e}")
+            # Try to get channel (don't block if fails)
+            asyncio.create_task(self.setup_channel())
         else:
             LOGGER.warning("⚠️ No file channels configured!")
             self.db_channel_id = None
@@ -94,18 +92,9 @@ class Bot(Client):
         if FORCE_SUB_CHANNELS:
             LOGGER.info(f"📢 Force-Sub Channels: {len(FORCE_SUB_CHANNELS)}")
         
-        # Send log message
+        # Send log message (non-blocking)
         if LOG_CHANNEL and LOG_CHANNEL != 0:
-            try:
-                await self.send_message(
-                    LOG_CHANNEL,
-                    f"<b>🤖 Bot Started!</b>\n\n"
-                    f"<b>Bot:</b> @{me.username}\n"
-                    f"<b>Status:</b> ✅ Online"
-                )
-                LOGGER.info("✅ Log channel notified")
-            except Exception as e:
-                LOGGER.warning(f"⚠️ Log channel error: {e}")
+            asyncio.create_task(self.send_log_notification())
         
         # Load plugins manually
         await self.load_plugins()
@@ -115,9 +104,37 @@ class Bot(Client):
         LOGGER.info("🔥 BOT IS READY!")
         LOGGER.info(f"   Bot: @{me.username}")
         LOGGER.info(f"   Database: {'✅' if self.db else '❌'}")
-        LOGGER.info(f"   Plugins: ✅ Loaded")
+        LOGGER.info(f"   Channel: {'⏳ Loading...' if self.db_channel_id else '❌'}")
         LOGGER.info("=" * 50)
         LOGGER.info("")
+    
+    async def setup_channel(self):
+        """Setup database channel in background"""
+        try:
+            await asyncio.sleep(2)  # Wait a bit for bot to be ready
+            await self.get_db_channel()
+        except Exception as e:
+            LOGGER.error(f"❌ Channel setup failed: {e}")
+            LOGGER.warning("⚠️ Bot will continue without channel")
+            LOGGER.warning("📋 To fix:")
+            LOGGER.warning("   1. Make bot ADMIN in channel")
+            LOGGER.warning("   2. Use correct channel ID format: -100XXXXXXXXXX")
+            LOGGER.warning("   3. Forward message from channel to @userinfobot to get ID")
+    
+    async def send_log_notification(self):
+        """Send log notification in background"""
+        from config import LOG_CHANNEL
+        try:
+            await asyncio.sleep(1)
+            await self.send_message(
+                LOG_CHANNEL,
+                f"<b>🤖 Bot Started!</b>\n\n"
+                f"<b>Bot:</b> @{self.username}\n"
+                f"<b>Status:</b> ✅ Online"
+            )
+            LOGGER.info("✅ Log channel notified")
+        except Exception as e:
+            LOGGER.warning(f"⚠️ Log channel error: {e}")
     
     async def load_plugins(self):
         """Load all plugins manually"""
@@ -184,10 +201,13 @@ class Bot(Client):
         
         try:
             self.db_channel = await self.get_chat(self.db_channel_id)
-            LOGGER.info(f"✅ Channel: {self.db_channel.title}")
+            LOGGER.info(f"✅ Channel Connected: {self.db_channel.title}")
+            LOGGER.info(f"   Channel ID: {self.db_channel.id}")
+            LOGGER.info(f"   Members: {self.db_channel.members_count if hasattr(self.db_channel, 'members_count') else 'N/A'}")
             return self.db_channel
         except Exception as e:
-            LOGGER.error(f"❌ Channel error: {e}")
+            LOGGER.error(f"❌ Channel connection failed: {e}")
+            LOGGER.warning(f"⚠️ Channel ID used: {self.db_channel_id}")
             return None
 
     async def stop(self, *args):
