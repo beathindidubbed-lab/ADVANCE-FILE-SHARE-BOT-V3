@@ -7,7 +7,7 @@ import aiohttp
 from pyrogram import Client, filters
 from pyrogram.types import Message
 
-from bot import bot
+#from bot import bot
 from config import ADMINS
 
 # Popular URL shortener APIs (choose one or add your own)
@@ -17,7 +17,7 @@ SHORTENER_API = "https://ulvis.net/api.php"  # Free, no API key needed
 # "https://is.gd/create.php?format=simple"
 # "https://v.gd/create.php?format=simple"
 
-@bot.on_message(filters.private & filters.user(ADMINS) & filters.command("shortener"))
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("shortener"))
 async def shortener_command(client: Client, message: Message):
     """Shorten any URL"""
     
@@ -84,7 +84,7 @@ async def shortener_command(client: Client, message: Message):
         )
 
 
-@bot.on_message(filters.private & filters.user(ADMINS) & filters.command("shortener_settings"))
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("shortener_settings"))
 async def shortener_settings(client: Client, message: Message):
     """Configure URL shortener"""
     
