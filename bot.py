@@ -1,6 +1,6 @@
 """
 Advanced Auto Filter Bot V3
-FIXED - Bot starts even if channel fails
+FINAL FIX - Plugins register BEFORE bot starts
 """
 
 import sys
@@ -40,9 +40,68 @@ logging.getLogger("pyrogram").setLevel(logging.WARNING)
 LOGGER = logging.getLogger(__name__)
 
 
+def load_plugins_sync():
+    """Load all plugins BEFORE bot starts (synchronous)"""
+    LOGGER.info("📦 Loading plugins...")
+    
+    plugins_dir = Path("plugins")
+    
+    if not plugins_dir.exists():
+        LOGGER.error("❌ Plugins directory not found!")
+        return 0, 0
+    
+    plugin_files = list(plugins_dir.glob("*.py"))
+    
+    if not plugin_files:
+        LOGGER.warning("⚠️ No plugin files found!")
+        return 0, 0
+    
+    loaded = 0
+    failed = 0
+    
+    for plugin_file in plugin_files:
+        plugin_name = plugin_file.stem
+        
+        # Skip __init__.py
+        if plugin_name.startswith("__"):
+            continue
+        
+        try:
+            # Import the plugin module
+            import_path = f"plugins.{plugin_name}"
+            
+            # Check if already imported
+            if import_path in sys.modules:
+                # Reload if already imported
+                importlib.reload(sys.modules[import_path])
+            else:
+                # Import for first time
+                spec = importlib.util.spec_from_file_location(
+                    import_path,
+                    plugin_file
+                )
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[import_path] = module
+                spec.loader.exec_module(module)
+            
+            LOGGER.info(f"   ✅ Loaded: {plugin_name}")
+            loaded += 1
+            
+        except Exception as e:
+            LOGGER.error(f"   ❌ Failed: {plugin_name} - {e}")
+            failed += 1
+    
+    LOGGER.info(f"📦 Plugins loaded: {loaded} ✅ | {failed} ❌")
+    return loaded, failed
+
+
 class Bot(Client):
     def __init__(self):
         from config import API_ID, API_HASH, BOT_TOKEN, WORKERS
+        
+        # Load plugins BEFORE initializing Client
+        LOGGER.info("🔧 Pre-loading plugins...")
+        self.plugins_loaded, self.plugins_failed = load_plugins_sync()
         
         super().__init__(
             name="AdvanceAutoFilterBot",
@@ -96,13 +155,11 @@ class Bot(Client):
         if LOG_CHANNEL and LOG_CHANNEL != 0:
             asyncio.create_task(self.send_log_notification())
         
-        # Load plugins manually
-        await self.load_plugins()
-        
         LOGGER.info("")
         LOGGER.info("=" * 50)
         LOGGER.info("🔥 BOT IS READY!")
         LOGGER.info(f"   Bot: @{me.username}")
+        LOGGER.info(f"   Plugins: {self.plugins_loaded} ✅")
         LOGGER.info(f"   Database: {'✅' if self.db else '❌'}")
         LOGGER.info(f"   Channel: {'⏳ Loading...' if self.db_channel_id else '❌'}")
         LOGGER.info("=" * 50)
@@ -111,7 +168,7 @@ class Bot(Client):
     async def setup_channel(self):
         """Setup database channel in background"""
         try:
-            await asyncio.sleep(2)  # Wait a bit for bot to be ready
+            await asyncio.sleep(2)
             await self.get_db_channel()
         except Exception as e:
             LOGGER.error(f"❌ Channel setup failed: {e}")
@@ -130,65 +187,12 @@ class Bot(Client):
                 LOG_CHANNEL,
                 f"<b>🤖 Bot Started!</b>\n\n"
                 f"<b>Bot:</b> @{self.username}\n"
+                f"<b>Plugins:</b> {self.plugins_loaded} loaded\n"
                 f"<b>Status:</b> ✅ Online"
             )
             LOGGER.info("✅ Log channel notified")
         except Exception as e:
             LOGGER.warning(f"⚠️ Log channel error: {e}")
-    
-    async def load_plugins(self):
-        """Load all plugins manually"""
-        LOGGER.info("📦 Loading plugins...")
-        
-        plugins_dir = Path("plugins")
-        
-        if not plugins_dir.exists():
-            LOGGER.error("❌ Plugins directory not found!")
-            return
-        
-        # Get all Python files in plugins directory
-        plugin_files = list(plugins_dir.glob("*.py"))
-        
-        if not plugin_files:
-            LOGGER.warning("⚠️ No plugin files found!")
-            return
-        
-        loaded = 0
-        failed = 0
-        
-        for plugin_file in plugin_files:
-            plugin_name = plugin_file.stem
-            
-            # Skip __init__.py
-            if plugin_name.startswith("__"):
-                continue
-            
-            try:
-                # Import the plugin module
-                import_path = f"plugins.{plugin_name}"
-                
-                # Check if already imported
-                if import_path in sys.modules:
-                    # Reload if already imported
-                    importlib.reload(sys.modules[import_path])
-                else:
-                    # Import for first time
-                    spec = importlib.util.spec_from_file_location(
-                        import_path,
-                        plugin_file
-                    )
-                    module = importlib.util.module_from_spec(spec)
-                    sys.modules[import_path] = module
-                    spec.loader.exec_module(module)
-                
-                LOGGER.info(f"   ✅ Loaded: {plugin_name}")
-                loaded += 1
-                
-            except Exception as e:
-                LOGGER.error(f"   ❌ Failed: {plugin_name} - {e}")
-                failed += 1
-        
-        LOGGER.info(f"📦 Plugins loaded: {loaded} ✅ | {failed} ❌")
     
     async def get_db_channel(self):
         """Get database channel details"""
@@ -203,11 +207,25 @@ class Bot(Client):
             self.db_channel = await self.get_chat(self.db_channel_id)
             LOGGER.info(f"✅ Channel Connected: {self.db_channel.title}")
             LOGGER.info(f"   Channel ID: {self.db_channel.id}")
-            LOGGER.info(f"   Members: {self.db_channel.members_count if hasattr(self.db_channel, 'members_count') else 'N/A'}")
             return self.db_channel
         except Exception as e:
             LOGGER.error(f"❌ Channel connection failed: {e}")
             LOGGER.warning(f"⚠️ Channel ID used: {self.db_channel_id}")
+            
+            # If your other repo works with this ID, the format might be different
+            # Try converting the ID
+            if str(self.db_channel_id).startswith("-100"):
+                # Try without the -100 prefix
+                alt_id = int(str(self.db_channel_id).replace("-100", "-"))
+                LOGGER.info(f"🔄 Trying alternate format: {alt_id}")
+                try:
+                    self.db_channel_id = alt_id
+                    self.db_channel = await self.get_chat(alt_id)
+                    LOGGER.info(f"✅ Channel Connected with alternate ID: {self.db_channel.title}")
+                    return self.db_channel
+                except:
+                    pass
+            
             return None
 
     async def stop(self, *args):
@@ -227,11 +245,14 @@ async def start_bot():
     try:
         await bot.start()
         LOGGER.info("🔥 Bot is running...")
+        LOGGER.info("💡 Try sending /start or /test to the bot")
         await idle()
     except KeyboardInterrupt:
         LOGGER.info("⚠️ Keyboard interrupt received")
     except Exception as e:
         LOGGER.error(f"❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
         await bot.stop()
 
