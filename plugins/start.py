@@ -100,7 +100,7 @@ async def start_command(client: Client, message: Message):
             await client.db.add_user(user_id)
     
     # Check if banned
-    if bot.db and await client.db.is_user_banned(user_id):
+    if client.db and await client.db.is_user_banned(user_id):
         await message.reply_text(
             "❌ <b>You are Banned!</b>\n\n"
             "Contact admin for more info.",
