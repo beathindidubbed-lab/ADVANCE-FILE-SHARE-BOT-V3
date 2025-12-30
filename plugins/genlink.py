@@ -6,11 +6,11 @@ Store a single message/file (moderators only)
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
-from bot import bot
+#from bot import bot
 from config import ADMINS
 from utils.helpers import encode
 
-@bot.on_message(filters.private & filters.user(ADMINS) & filters.command("genlink"))
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("genlink"))
 async def genlink_command(client: Client, message: Message):
     """Generate link for single file"""
     
