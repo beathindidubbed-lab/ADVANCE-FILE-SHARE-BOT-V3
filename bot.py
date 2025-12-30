@@ -1,6 +1,6 @@
 """
 Advanced Auto Filter Bot V3
-FINAL FIX - Plugins register BEFORE bot starts
+WORKS WITHOUT CHANNEL - Configure channel later from bot commands!
 """
 
 import sys
@@ -112,6 +112,10 @@ class Bot(Client):
             parse_mode=ParseMode.HTML
         )
         self.LOGGER = LOGGER
+        
+        # Initialize channel as None - can be set later
+        self.db_channel = None
+        self.db_channel_id = None
 
     async def start(self):
         from config import LOG_CHANNEL, CHANNELS, FORCE_SUB_CHANNELS
@@ -137,16 +141,13 @@ class Bot(Client):
             LOGGER.warning("⚠️ Bot will continue without database")
             self.db = None
         
-        # Setup channels (non-blocking)
-        if CHANNELS:
-            LOGGER.info(f"📁 File Channels Configured: {len(CHANNELS)}")
+        # Try to setup channel but DON'T FAIL if it doesn't work
+        if CHANNELS and CHANNELS[0] != 0:
+            LOGGER.info(f"📁 Attempting to configure channel...")
             self.db_channel_id = CHANNELS[0]
-            
-            # Try to get channel (don't block if fails)
-            asyncio.create_task(self.setup_channel())
+            asyncio.create_task(self.try_setup_channel())
         else:
-            LOGGER.warning("⚠️ No file channels configured!")
-            self.db_channel_id = None
+            LOGGER.info("⚠️ No channel configured - use /setchannel command later")
         
         if FORCE_SUB_CHANNELS:
             LOGGER.info(f"📢 Force-Sub Channels: {len(FORCE_SUB_CHANNELS)}")
@@ -156,27 +157,37 @@ class Bot(Client):
             asyncio.create_task(self.send_log_notification())
         
         LOGGER.info("")
-        LOGGER.info("=" * 50)
-        LOGGER.info("🔥 BOT IS READY!")
-        LOGGER.info(f"   Bot: @{me.username}")
-        LOGGER.info(f"   Plugins: {self.plugins_loaded} ✅")
-        LOGGER.info(f"   Database: {'✅' if self.db else '❌'}")
-        LOGGER.info(f"   Channel: {'⏳ Loading...' if self.db_channel_id else '❌'}")
-        LOGGER.info("=" * 50)
+        LOGGER.info("=" * 70)
+        LOGGER.info("🎉 BOT IS RUNNING AND READY!")
+        LOGGER.info("=" * 70)
+        LOGGER.info(f"   ✅ Bot: @{me.username}")
+        LOGGER.info(f"   ✅ Bot ID: {me.id}")
+        LOGGER.info(f"   ✅ Plugins: {self.plugins_loaded} loaded")
+        LOGGER.info(f"   ✅ Database: {'Connected' if self.db else 'Disabled'}")
+        LOGGER.info(f"   ⚙️ Channel: {'Checking...' if self.db_channel_id else 'Not configured yet'}")
+        LOGGER.info("")
+        LOGGER.info("💡 TRY THESE COMMANDS NOW:")
+        LOGGER.info("   👉 /start  - Start the bot")
+        LOGGER.info("   👉 /test   - Test bot response")
+        LOGGER.info("   👉 /help   - Get help")
+        LOGGER.info("   👉 /setchannel - Configure channel (admin only)")
+        LOGGER.info("")
+        LOGGER.info("🟢 BOT IS ONLINE AND RESPONDING!")
+        LOGGER.info("=" * 70)
         LOGGER.info("")
     
-    async def setup_channel(self):
-        """Setup database channel in background"""
+    async def try_setup_channel(self):
+        """Try to setup channel but don't fail if it doesn't work"""
         try:
-            await asyncio.sleep(2)
-            await self.get_db_channel()
+            await asyncio.sleep(3)
+            self.db_channel = await self.get_chat(self.db_channel_id)
+            LOGGER.info(f"✅ Channel Connected: {self.db_channel.title}")
+            LOGGER.info(f"   Channel ID: {self.db_channel.id}")
         except Exception as e:
-            LOGGER.error(f"❌ Channel setup failed: {e}")
-            LOGGER.warning("⚠️ Bot will continue without channel")
-            LOGGER.warning("📋 To fix:")
-            LOGGER.warning("   1. Make bot ADMIN in channel")
-            LOGGER.warning("   2. Use correct channel ID format: -100XXXXXXXXXX")
-            LOGGER.warning("   3. Forward message from channel to @userinfobot to get ID")
+            LOGGER.warning(f"⚠️ Channel setup failed: {e}")
+            LOGGER.warning(f"⚠️ Don't worry! Use /setchannel command to configure it later")
+            LOGGER.warning(f"⚠️ Bot will work for other commands")
+            self.db_channel = None
     
     async def send_log_notification(self):
         """Send log notification in background"""
@@ -196,37 +207,7 @@ class Bot(Client):
     
     async def get_db_channel(self):
         """Get database channel details"""
-        if hasattr(self, 'db_channel'):
-            return self.db_channel
-        
-        if not self.db_channel_id:
-            LOGGER.error("❌ No database channel!")
-            return None
-        
-        try:
-            self.db_channel = await self.get_chat(self.db_channel_id)
-            LOGGER.info(f"✅ Channel Connected: {self.db_channel.title}")
-            LOGGER.info(f"   Channel ID: {self.db_channel.id}")
-            return self.db_channel
-        except Exception as e:
-            LOGGER.error(f"❌ Channel connection failed: {e}")
-            LOGGER.warning(f"⚠️ Channel ID used: {self.db_channel_id}")
-            
-            # If your other repo works with this ID, the format might be different
-            # Try converting the ID
-            if str(self.db_channel_id).startswith("-100"):
-                # Try without the -100 prefix
-                alt_id = int(str(self.db_channel_id).replace("-100", "-"))
-                LOGGER.info(f"🔄 Trying alternate format: {alt_id}")
-                try:
-                    self.db_channel_id = alt_id
-                    self.db_channel = await self.get_chat(alt_id)
-                    LOGGER.info(f"✅ Channel Connected with alternate ID: {self.db_channel.title}")
-                    return self.db_channel
-                except:
-                    pass
-            
-            return None
+        return self.db_channel
 
     async def stop(self, *args):
         await super().stop()
@@ -244,8 +225,8 @@ async def start_bot():
     
     try:
         await bot.start()
-        LOGGER.info("🔥 Bot is running...")
-        LOGGER.info("💡 Try sending /start or /test to the bot")
+        LOGGER.info("🔥 Bot is fully operational!")
+        LOGGER.info("🔥 Send /start to your bot now!")
         await idle()
     except KeyboardInterrupt:
         LOGGER.info("⚠️ Keyboard interrupt received")
