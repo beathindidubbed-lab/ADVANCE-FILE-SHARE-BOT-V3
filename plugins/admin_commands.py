@@ -8,12 +8,12 @@ from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineK
 from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated
 import asyncio
 
-from bot import bot
+#from bot import bot
 from config import ADMINS
 
 # ========== USERS COMMAND ==========
 
-@bot.on_message(filters.private & filters.user(ADMINS) & filters.command("users"))
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("users"))
 async def users_command(client: Client, message: Message):
     """Show user statistics with beautiful UI"""
     
@@ -44,7 +44,7 @@ async def users_command(client: Client, message: Message):
     await msg.edit_text(text, reply_markup=buttons)
 
 
-@bot.on_callback_query(filters.regex("^users_refresh$"))
+@Client.on_callback_query(filters.regex("^users_refresh$"))
 async def users_refresh_callback(client: Client, query: CallbackQuery):
     """Refresh user statistics"""
     
@@ -79,7 +79,7 @@ async def users_refresh_callback(client: Client, query: CallbackQuery):
 
 # ========== BROADCAST COMMAND ==========
 
-@bot.on_message(filters.private & filters.user(ADMINS) & filters.command("broadcast"))
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("broadcast"))
 async def broadcast_command(client: Client, message: Message):
     """Broadcast message to all users"""
     
@@ -155,7 +155,7 @@ async def broadcast_command(client: Client, message: Message):
 
 # ========== BAN/UNBAN COMMANDS ==========
 
-@bot.on_message(filters.private & filters.user(ADMINS) & filters.command("ban"))
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("ban"))
 async def ban_user_command(client: Client, message: Message):
     """Ban a user"""
     
@@ -192,7 +192,7 @@ async def ban_user_command(client: Client, message: Message):
     )
 
 
-@bot.on_message(filters.private & filters.user(ADMINS) & filters.command("unban"))
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("unban"))
 async def unban_user_command(client: Client, message: Message):
     """Unban a user"""
     
@@ -231,7 +231,7 @@ async def unban_user_command(client: Client, message: Message):
 
 # ========== STATS COMMAND ==========
 
-@bot.on_message(filters.private & filters.user(ADMINS) & filters.command("stats"))
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("stats"))
 async def stats_command(client: Client, message: Message):
     """Show bot statistics"""
     
@@ -273,7 +273,7 @@ async def stats_command(client: Client, message: Message):
     await message.reply_text(text, reply_markup=buttons, quote=True)
 
 
-@bot.on_callback_query(filters.regex("^stats_refresh$"))
+@Client.on_callback_query(filters.regex("^stats_refresh$"))
 async def stats_refresh_callback(client: Client, query: CallbackQuery):
     """Refresh statistics"""
     
