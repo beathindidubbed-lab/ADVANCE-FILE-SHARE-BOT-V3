@@ -25,9 +25,8 @@ async def decode(base64_string):
 
 async def get_messages(client, message_ids):
     """Fetch messages from database channel"""
-    from bot import bot
-    
-    if not hasattr(bot, 'db_channel'):
+    # FIXED: Get db_channel from client, not from bot import
+    if not hasattr(client, 'db_channel'):
         return []
     
     messages = []
@@ -39,14 +38,14 @@ async def get_messages(client, message_ids):
         
         try:
             msgs = await client.get_messages(
-                chat_id=bot.db_channel.id,
+                chat_id=client.db_channel.id,
                 message_ids=temp_ids
             )
             messages.extend(msgs)
         except FloodWait as e:
             await asyncio.sleep(e.value)
             msgs = await client.get_messages(
-                chat_id=bot.db_channel.id,
+                chat_id=client.db_channel.id,
                 message_ids=temp_ids
             )
             messages.extend(msgs)
