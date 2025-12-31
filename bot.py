@@ -1,34 +1,21 @@
 """
 Advanced Auto Filter Bot V3
-WORKS WITHOUT CHANNEL - Configure channel later from bot commands!
+FIXED FOR RENDER: Runs web server + bot together
 """
 
 import sys
-import glob
-import importlib
-import importlib.util
 import logging
 import asyncio
-from pathlib import Path
-from pyrogram import Client, idle
+from aiohttp import web
+from pyrogram import Client, filters, idle
 from pyrogram.enums import ParseMode
+from pyrogram.types import Message
 
-# CRITICAL: Import pyromod for listen() functionality
 try:
     from pyromod import listen
 except ImportError:
     print("ERROR: pyromod not installed!")
-    print("Install it: pip install pyromod")
     sys.exit(1)
-
-ascii_art = """
-██████╗░███████╗░█████╗░████████╗░░░█████╗░███╗░░██╗██╗███╗░░░███╗███████╗
-██╔══██╗██╔════╝██╔══██╗╚══██╔══╝░░██╔══██╗████╗░██║██║████╗░████║██╔════╝
-██████╦╝█████╗░░███████║░░░██║░░░░░███████║██╔██╗██║██║██╔████╔██║█████╗░░
-██╔══██╗██╔══╝░░██╔══██║░░░██║░░░░░██╔══██║██║╚████║██║██║╚██╔╝██║██╔══╝░░
-██████╦╝███████╗██║░░██║░░░██║░░░░░██║░░██║██║░╚███║██║██║░╚═╝░██║███████╗
-╚═════╝░╚══════╝╚═╝░░╚═╝░░░╚═╝░░░░░╚═╝░░╚═╝╚═╝░░╚══╝╚═╝╚═╝░░░░░╚═╝╚══════╝
-"""
 
 # Setup logging
 logging.basicConfig(
@@ -40,68 +27,9 @@ logging.getLogger("pyrogram").setLevel(logging.WARNING)
 LOGGER = logging.getLogger(__name__)
 
 
-def load_plugins_sync():
-    """Load all plugins BEFORE bot starts (synchronous)"""
-    LOGGER.info("📦 Loading plugins...")
-    
-    plugins_dir = Path("plugins")
-    
-    if not plugins_dir.exists():
-        LOGGER.error("❌ Plugins directory not found!")
-        return 0, 0
-    
-    plugin_files = list(plugins_dir.glob("*.py"))
-    
-    if not plugin_files:
-        LOGGER.warning("⚠️ No plugin files found!")
-        return 0, 0
-    
-    loaded = 0
-    failed = 0
-    
-    for plugin_file in plugin_files:
-        plugin_name = plugin_file.stem
-        
-        # Skip __init__.py
-        if plugin_name.startswith("__"):
-            continue
-        
-        try:
-            # Import the plugin module
-            import_path = f"plugins.{plugin_name}"
-            
-            # Check if already imported
-            if import_path in sys.modules:
-                # Reload if already imported
-                importlib.reload(sys.modules[import_path])
-            else:
-                # Import for first time
-                spec = importlib.util.spec_from_file_location(
-                    import_path,
-                    plugin_file
-                )
-                module = importlib.util.module_from_spec(spec)
-                sys.modules[import_path] = module
-                spec.loader.exec_module(module)
-            
-            LOGGER.info(f"   ✅ Loaded: {plugin_name}")
-            loaded += 1
-            
-        except Exception as e:
-            LOGGER.error(f"   ❌ Failed: {plugin_name} - {e}")
-            failed += 1
-    
-    LOGGER.info(f"📦 Plugins loaded: {loaded} ✅ | {failed} ❌")
-    return loaded, failed
-
-
 class Bot(Client):
     def __init__(self):
         from config import API_ID, API_HASH, BOT_TOKEN, WORKERS
-        
-        # Load plugins BEFORE initializing Client
-        LOGGER.info("🔧 Pre-loading plugins...")
-        self.plugins_loaded, self.plugins_failed = load_plugins_sync()
         
         super().__init__(
             name="AdvanceAutoFilterBot",
@@ -112,14 +40,10 @@ class Bot(Client):
             parse_mode=ParseMode.HTML
         )
         self.LOGGER = LOGGER
-        
-        # Initialize channel as None - can be set later
         self.db_channel = None
         self.db_channel_id = None
 
     async def start(self):
-        from config import LOG_CHANNEL, CHANNELS, FORCE_SUB_CHANNELS
-        
         await super().start()
         
         me = await self.get_me()
@@ -128,120 +52,181 @@ class Bot(Client):
         self.mention = me.mention
         self.first_name = me.first_name
         
-        LOGGER.info(f"✅ Bot Started as @{me.username}")
+        LOGGER.info(f"✅ Bot Started: @{me.username}")
         
-        # Connect to database
+        # Connect database
         try:
             from database.database import Database
             self.db = Database()
             await self.db.connect()
             LOGGER.info("✅ Database Connected")
         except Exception as e:
-            LOGGER.error(f"❌ Database Error: {e}")
-            LOGGER.warning("⚠️ Bot will continue without database")
+            LOGGER.warning(f"⚠️ Database: {e}")
             self.db = None
         
-        # Try to setup channel but DON'T FAIL if it doesn't work
-        if CHANNELS and CHANNELS[0] != 0:
-            LOGGER.info(f"📁 Attempting to configure channel...")
-            self.db_channel_id = CHANNELS[0]
-            asyncio.create_task(self.try_setup_channel())
-        else:
-            LOGGER.info("⚠️ No channel configured - use /setchannel command later")
-        
-        if FORCE_SUB_CHANNELS:
-            LOGGER.info(f"📢 Force-Sub Channels: {len(FORCE_SUB_CHANNELS)}")
-        
-        # Send log message (non-blocking)
-        if LOG_CHANNEL and LOG_CHANNEL != 0:
-            asyncio.create_task(self.send_log_notification())
+        # Register handlers
+        self.register_handlers()
         
         LOGGER.info("")
         LOGGER.info("=" * 70)
-        LOGGER.info("🎉 BOT IS RUNNING AND READY!")
-        LOGGER.info("=" * 70)
-        LOGGER.info(f"   ✅ Bot: @{me.username}")
-        LOGGER.info(f"   ✅ Bot ID: {me.id}")
-        LOGGER.info(f"   ✅ Plugins: {self.plugins_loaded} loaded")
-        LOGGER.info(f"   ✅ Database: {'Connected' if self.db else 'Disabled'}")
-        LOGGER.info(f"   ⚙️ Channel: {'Checking...' if self.db_channel_id else 'Not configured yet'}")
-        LOGGER.info("")
-        LOGGER.info("💡 TRY THESE COMMANDS NOW:")
-        LOGGER.info("   👉 /start  - Start the bot")
-        LOGGER.info("   👉 /test   - Test bot response")
-        LOGGER.info("   👉 /help   - Get help")
-        LOGGER.info("   👉 /setchannel - Configure channel (admin only)")
-        LOGGER.info("")
-        LOGGER.info("🟢 BOT IS ONLINE AND RESPONDING!")
+        LOGGER.info("🎉 BOT IS READY AND WILL RESPOND!")
+        LOGGER.info(f"   Bot: @{self.username}")
+        LOGGER.info(f"   ID: {self.id}")
         LOGGER.info("=" * 70)
         LOGGER.info("")
     
-    async def try_setup_channel(self):
-        """Try to setup channel but don't fail if it doesn't work"""
-        try:
-            await asyncio.sleep(3)
-            self.db_channel = await self.get_chat(self.db_channel_id)
-            LOGGER.info(f"✅ Channel Connected: {self.db_channel.title}")
-            LOGGER.info(f"   Channel ID: {self.db_channel.id}")
-        except Exception as e:
-            LOGGER.warning(f"⚠️ Channel setup failed: {e}")
-            LOGGER.warning(f"⚠️ Don't worry! Use /setchannel command to configure it later")
-            LOGGER.warning(f"⚠️ Bot will work for other commands")
-            self.db_channel = None
-    
-    async def send_log_notification(self):
-        """Send log notification in background"""
-        from config import LOG_CHANNEL
-        try:
-            await asyncio.sleep(1)
-            await self.send_message(
-                LOG_CHANNEL,
-                f"<b>🤖 Bot Started!</b>\n\n"
-                f"<b>Bot:</b> @{self.username}\n"
-                f"<b>Plugins:</b> {self.plugins_loaded} loaded\n"
-                f"<b>Status:</b> ✅ Online"
+    def register_handlers(self):
+        """Register all handlers"""
+        
+        LOGGER.info("📝 Registering handlers...")
+        
+        # /start command
+        @self.on_message(filters.command("start") & filters.private)
+        async def start_handler(client, message: Message):
+            LOGGER.info(f"📨 /start from {message.from_user.id}")
+            await message.reply_text(
+                f"✅ <b>BOT IS WORKING!</b>\n\n"
+                f"👋 Hello {message.from_user.first_name}!\n\n"
+                f"<b>Bot:</b> @{client.username}\n"
+                f"<b>Your ID:</b> <code>{message.from_user.id}</code>\n\n"
+                f"🟢 I'm online and responding!\n\n"
+                f"<b>Try these commands:</b>\n"
+                f"• /test - Test bot\n"
+                f"• /ping - Check status\n"
+                f"• /help - Get help",
+                quote=True
             )
-            LOGGER.info("✅ Log channel notified")
-        except Exception as e:
-            LOGGER.warning(f"⚠️ Log channel error: {e}")
-    
-    async def get_db_channel(self):
-        """Get database channel details"""
-        return self.db_channel
+        
+        # /test command
+        @self.on_message(filters.command("test") & filters.private)
+        async def test_handler(client, message: Message):
+            LOGGER.info(f"📨 /test from {message.from_user.id}")
+            await message.reply_text(
+                f"✅ <b>TEST SUCCESSFUL!</b>\n\n"
+                f"<b>User:</b> {message.from_user.first_name}\n"
+                f"<b>ID:</b> <code>{message.from_user.id}</code>\n"
+                f"<b>Bot:</b> @{client.username}\n\n"
+                f"🎉 Everything is working perfectly!",
+                quote=True
+            )
+        
+        # /ping command
+        @self.on_message(filters.command("ping") & filters.private)
+        async def ping_handler(client, message: Message):
+            LOGGER.info(f"📨 /ping from {message.from_user.id}")
+            await message.reply_text("🏓 <b>PONG!</b>\n\nBot is alive!", quote=True)
+        
+        # /help command
+        @self.on_message(filters.command("help") & filters.private)
+        async def help_handler(client, message: Message):
+            await message.reply_text(
+                f"📚 <b>HELP MENU</b>\n\n"
+                f"<b>Available Commands:</b>\n"
+                f"• /start - Start bot\n"
+                f"• /test - Test functionality\n"
+                f"• /ping - Check if online\n"
+                f"• /help - This menu\n\n"
+                f"<b>Bot Status:</b> 🟢 Online",
+                quote=True
+            )
+        
+        # Catch other text
+        @self.on_message(filters.private & filters.text)
+        async def text_handler(client, message: Message):
+            LOGGER.info(f"📨 Text from {message.from_user.id}: {message.text}")
+            
+            text = message.text.lower()
+            if text in ['hi', 'hello', 'hey', 'test']:
+                await message.reply_text(
+                    f"👋 Hey {message.from_user.first_name}!\n\n"
+                    f"I'm working! Try /start",
+                    quote=True
+                )
+        
+        LOGGER.info("✅ Handlers registered! Bot will respond now!")
 
     async def stop(self, *args):
         await super().stop()
-        LOGGER.info("❌ Bot Stopped!")
+        LOGGER.info("❌ Bot Stopped")
 
 
-# Create bot instance
-bot = Bot()
+# Web server for Render (keeps service alive)
+async def handle_health(request):
+    """Health check endpoint"""
+    return web.Response(text="Bot is running!")
+
+async def handle_root(request):
+    """Root endpoint"""
+    return web.Response(text="Telegram Bot is Online!")
 
 
-async def start_bot():
-    """Start the bot"""
+async def start_web_server():
+    """Start web server for Render"""
+    import os
+    
+    app = web.Application()
+    app.router.add_get('/', handle_root)
+    app.router.add_get('/health', handle_health)
+    
+    # Render provides PORT environment variable
+    port = int(os.environ.get('PORT', 8080))
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    
+    LOGGER.info(f"🌐 Web server started on port {port}")
+    return runner
+
+
+async def main():
+    """Main function - runs bot + web server"""
+    
+    ascii_art = """
+██████╗░███████╗░█████╗░████████╗░░░█████╗░███╗░░██╗██╗███╗░░░███╗███████╗
+██╔══██╗██╔════╝██╔══██╗╚══██╔══╝░░██╔══██╗████╗░██║██║████╗░████║██╔════╝
+██████╦╝█████╗░░███████║░░░██║░░░░░███████║██╔██╗██║██║██╔████╔██║█████╗░░
+██╔══██╗██╔══╝░░██╔══██║░░░██║░░░░░██╔══██║██║╚████║██║██║╚██╔╝██║██╔══╝░░
+██████╦╝███████╗██║░░██║░░░██║░░░░░██║░░██║██║░╚███║██║██║░╚═╝░██║███████╗
+╚═════╝░╚══════╝╚═╝░░╚═╝░░░╚═╝░░░░░╚═╝░░╚═╝╚═╝░░╚══╝╚═╝╚═╝░░░░░╚═╝╚══════╝
+"""
+    
     print(ascii_art)
-    LOGGER.info("🚀 Starting bot...")
+    print("\n" + "=" * 70)
+    print("🚀 Starting Bot with Web Server...")
+    print("=" * 70 + "\n")
+    
+    bot = Bot()
+    web_runner = None
     
     try:
+        # Start web server (for Render)
+        web_runner = await start_web_server()
+        LOGGER.info("✅ Web server running")
+        
+        # Start bot
         await bot.start()
-        LOGGER.info("🔥 Bot is fully operational!")
-        LOGGER.info("🔥 Send /start to your bot now!")
+        LOGGER.info("✅ Bot running")
+        
+        # Keep running
+        LOGGER.info("🔥 Everything is running! Send /start to bot!")
         await idle()
+        
     except KeyboardInterrupt:
-        LOGGER.info("⚠️ Keyboard interrupt received")
+        LOGGER.info("⚠️ Stopped by user")
     except Exception as e:
         LOGGER.error(f"❌ Error: {e}")
         import traceback
         traceback.print_exc()
     finally:
+        if web_runner:
+            await web_runner.cleanup()
         await bot.stop()
 
 
 if __name__ == "__main__":
     try:
-        asyncio.run(start_bot())
+        asyncio.run(main())
     except KeyboardInterrupt:
-        LOGGER.info("👋 Stopped by user")
-    except Exception as e:
-        LOGGER.error(f"❌ Fatal error: {e}")
+        print("👋 Bye!")
