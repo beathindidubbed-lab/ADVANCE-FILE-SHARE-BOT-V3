@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: beatanimebot
+    name: telegram-bot
     env: python
     region: oregon
     plan: free
@@ -17,9 +17,9 @@ services:
       - key: DATABASE_URI
         sync: false
       - key: DATABASE_NAME
-        value: BeatAnimeBot
+        value: Beat-Link-Provider
       - key: CHANNELS
-        sync: false
+        value: "0"
       - key: ADMINS
         sync: false
       - key: FORCE_SUB_CHANNELS
@@ -27,18 +27,20 @@ services:
       - key: LOG_CHANNEL
         value: "0"
       - key: SUPPORT_CHAT
-        value: Beat_Anime_Ocean
+        value: ""
       - key: UPDATES_CHANNEL
-        value: beatAnime
+        value: ""
       - key: BOT_PICS
-        value: https://telegra.ph/file/d8d2e9cc6d60741c7e77d.jpg
+        value: https://ibb.co/k6BPTc45
       - key: PROTECT_CONTENT
         value: "True"
       - key: HIDE_CAPTION
         value: "False"
       - key: AUTO_DELETE_TIME
-        value: "300"
+        value: "0"
       - key: REQUEST_FSUB
         value: "False"
       - key: WORKERS
         value: "4"
+      - key: PORT
+        generateValue: true
