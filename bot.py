@@ -353,7 +353,7 @@ class Database:
                 "custom_button": "",
                 "bot_pics": Config.BOT_PICS,
                 "welcome_text": "",
-                "help_text": "",
+                "help_text": "➪ I ᴀᴍ ᴀ ᴘʀɪᴠᴀᴛᴇ ғɪʟᴇ sʜᴀʀɪɴɢ ʙᴏᴛ, ᴍᴇᴀɴᴛ ᴛᴏ ᴘʀᴏᴠɪᴅᴇ ғɪʟᴇs ᴀɴᴅ ɴᴇᴄᴇssᴀʀʏ sᴛᴜғғ ᴛʜʀᴏᴜɢʜ sᴘᴇᴄɪᴀʟ ʟɪɴᴋ ғᴏʀ sᴘᴇᴄɪғɪᴄ ᴄʜᴀɴɴᴇʟs.",
                 "about_text": "",
                 "db_channel_id": None
             }
@@ -671,8 +671,7 @@ class Bot(Client):
             api_hash=Config.API_HASH,
             bot_token=Config.BOT_TOKEN,
             workers=100,
-            sleep_threshold=10,
-            plugins=dict(root="bot")
+            sleep_threshold=10
         )
         
         self.db = Database()
@@ -847,60 +846,20 @@ class Bot(Client):
         async def done_handler(client, message):
             await done_command(self, message)
         
-        # === CALLBACK QUERY HANDLERS ===
-        
-        @self.on_callback_query(filters.regex("^help$"))
-        async def help_cb(client, query):
-            await help_callback(self, query)
-        
-        @self.on_callback_query(filters.regex("^about$"))
-        async def about_cb(client, query):
-            await about_callback(self, query)
-        
-        @self.on_callback_query(filters.regex("^start$"))
-        async def start_cb(client, query):
-            await start_callback(self, query)
-        
-        @self.on_callback_query(filters.regex("^close$"))
-        async def close_cb(client, query):
-            await close_callback(self, query)
-        
-        # Help command buttons
-        @self.on_callback_query(filters.regex("^help_(.*)$"))
-        async def help_command_cb(client, query):
-            await help_command_callback(self, query)
-        
-        # Settings toggle buttons
-        @self.on_callback_query(filters.regex("^toggle_(.*)$"))
-        async def toggle_cb(client, query):
-            await toggle_callback(self, query)
-        
-        # Auto delete time buttons
-        @self.on_callback_query(filters.regex("^autodel_(.*)$"))
-        async def autodel_cb(client, query):
-            await autodel_callback(self, query)
-        
-        # Request FSub buttons
-        @self.on_callback_query(filters.regex("^reqfsub_(.*)$"))
-        async def reqfsub_cb(client, query):
-            await reqfsub_callback(self, query)
-        
-        # Bot settings buttons
-        @self.on_callback_query(filters.regex("^botsettings_(.*)$"))
-        async def botsettings_cb(client, query):
-            await botsettings_callback(self, query)
-        
-        # Refresh buttons
-        @self.on_callback_query(filters.regex("^refresh$"))
-        async def refresh_cb(client, query):
-            await refresh_callback(self, query)
-        
         # Text message handlers for interactive commands
         @self.on_message(filters.private & filters.user(Config.ADMINS))
         async def text_handler(client, message):
             await text_message_handler(self, message)
         
         logger.info("✓ All handlers registered")
+    
+    async def setup_callbacks(self):
+        """Setup callback query handlers"""
+        # This method will be called after bot starts
+        
+        @self.on_callback_query()
+        async def callback_handler(client, query):
+            await handle_callback_query(self, query)
 
 
 # ===================================
@@ -1605,34 +1564,7 @@ async def show_user_help(client: Bot, message: Message):
     """Show help for regular users"""
     # Get settings
     settings = await client.db.get_settings()
-    help_text = settings.get("help_text", "")
-    
-    # Default help text if not set
-    if not help_text:
-        help_text = (
-            "👋 <b>Hello {first} ~</b>\n\n"
-            "➜ I AM A PRIVATE FILE SHARING BOT,\n"
-            "MEANT TO PROVIDE FILES AND NECESSARY\n"
-            "STUFF THROUGH SPECIAL LINK FOR\n"
-            "SPECIFIC CHANNELS.\n\n"
-            "➜ IN ORDER TO GET THE FILES YOU HAVE\n"
-            "TO JOIN THE ALL MENTIONED CHANNEL\n"
-            "THAT I PROVIDE YOU TO JOIN. YOU CAN\n"
-            "NOT ACCESS OR GET THE FILES UNLESS\n"
-            "YOU JOINED ALL CHANNELS.\n\n"
-            "➜ SO JOIN MENTIONED CHANNELS TO GET\n"
-            "FILES OR INITIATE MESSAGES...\n\n"
-            "• <code>/help</code> - OPEN THIS HELP MESSAGE !\n\n"
-            "➜ STILL HAVE DOUBTS, CONTACT BELOW\n"
-            "PERSONS/GROUP AS PER YOUR NEED!\n"
-        )
-    
-    # Replace variables
-    user = message.from_user
-    help_text = help_text.format(
-        first=user.first_name,
-        mention=f"<a href='tg://user?id={user.id}'>{user.first_name}</a>"
-    )
+    help_text = settings.get("help_text", "➪ I ᴀᴍ ᴀ ᴘʀɪᴠᴀᴛᴇ ғɪʟᴇ sʜᴀʀɪɴɢ ʙᴏᴛ, ᴍᴇᴀɴᴛ ᴛᴏ ᴘʀᴏᴠɪᴅᴇ ғɪʟᴇs ᴀɴᴅ ɴᴇᴄᴇssᴀʀʏ sᴛᴜғғ ᴛʜʀᴏᴜɢʜ sᴘᴇᴄɪᴀʟ ʟɪɴᴋ ғᴏʀ sᴘᴇᴄɪғɪᴄ ᴄʜᴀɴɴᴇʟs.")
     
     # Create buttons
     buttons = []
@@ -1646,7 +1578,7 @@ async def show_user_help(client: Bot, message: Message):
     # Owner and Developer buttons
     buttons.append([
         InlineKeyboardButton("📥 Owner", url=f"tg://user?id={Config.OWNER_ID}"),
-        InlineKeyboardButton("💫 Developer", url="tg://user?id={Config.OWNER_ID}")
+        InlineKeyboardButton("💫 Developer", url=f"tg://user?id={Config.OWNER_ID}")
     ])
     
     # Close button
@@ -3164,176 +3096,252 @@ async def ping_command(client: Bot, message: Message):
 # SECTION 12: CALLBACK HANDLERS (Lines 2801-3200)
 # ===================================
 
-async def help_callback(client: Bot, query: CallbackQuery):
-    """Handle help button callback"""
-    await query.answer()
-    await show_user_help(client, query.message)
+async def handle_callback_query(client: Bot, query: CallbackQuery):
+    """Handle all callback queries"""
+    try:
+        data = query.data
+        
+        if data == "help":
+            await query.answer()
+            await show_user_help(client, query.message)
+        
+        elif data == "about":
+            await query.answer()
+            await about_command(client, query.message)
+        
+        elif data == "start":
+            await query.answer()
+            await show_welcome_message(client, query.message)
+        
+        elif data == "close":
+            await query.answer("Closed!")
+            await query.message.delete()
+        
+        elif data == "refresh":
+            await query.answer("Refreshing...")
+            await refresh_callback(client, query)
+        
+        elif data.startswith("help_"):
+            await query.answer()
+            await handle_help_callback(client, query)
+        
+        elif data.startswith("toggle_"):
+            await query.answer()
+            await handle_toggle_callback(client, query)
+        
+        elif data.startswith("autodel_"):
+            await query.answer()
+            await handle_autodel_callback(client, query)
+        
+        elif data.startswith("reqfsub_"):
+            await query.answer()
+            await handle_reqfsub_callback(client, query)
+        
+        elif data.startswith("botsettings_"):
+            await query.answer()
+            await handle_botsettings_callback(client, query)
+        
+        elif data.startswith("settings_"):
+            await query.answer()
+            await handle_settings_callback(client, query)
+        
+        elif data == "set_button":
+            await query.answer()
+            await handle_button_setting_callback(client, query)
+        
+        elif data == "broadcast_confirm":
+            await query.answer()
+            await handle_broadcast_confirm(client, query)
+        
+        elif data == "removechannel_confirm":
+            await query.answer()
+            await handle_removechannel_confirm(client, query)
+        
+        else:
+            await query.answer("Button not configured!", show_alert=True)
+    
+    except Exception as e:
+        logger.error(f"Error handling callback: {e}")
+        await query.answer("Error processing request!", show_alert=True)
 
-async def about_callback(client: Bot, query: CallbackQuery):
-    """Handle about button callback"""
-    await query.answer()
-    await about_command(client, query.message)
+async def handle_help_callback(client: Bot, query: CallbackQuery):
+    """Handle help command callbacks"""
+    data = query.data
+    
+    if data == "help_genlink":
+        await query.message.edit_text(
+            "📝 <b>Generate Single File Link</b>\n\n"
+            "Usage: Reply to a file with /genlink\n\n"
+            "This command will generate a shareable link for a single file.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="help")]
+            ])
+        )
+    elif data == "help_batch":
+        await query.message.edit_text(
+            "📦 <b>Create Batch Link</b>\n\n"
+            "Usage: /batch (then follow instructions)\n\n"
+            "This command creates a batch link for sequential files.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="help")]
+            ])
+        )
+    elif data == "help_custom_batch":
+        await query.message.edit_text(
+            "🎯 <b>Create Custom Batch Link</b>\n\n"
+            "Usage: /custom_batch (then follow instructions)\n\n"
+            "This command creates a batch link for specific files.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="help")]
+            ])
+        )
+    elif data == "help_special_link":
+        await query.message.edit_text(
+            "⭐ <b>Create Special Link</b>\n\n"
+            "Usage: /special_link (then follow instructions)\n\n"
+            "This command creates a link with custom message.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="help")]
+            ])
+        )
+    elif data == "help_setchannel":
+        await query.message.edit_text(
+            "📺 <b>Set Database Channel</b>\n\n"
+            "Usage: /setchannel @channel_username or channel_id\n\n"
+            "This command sets the database channel for storing files.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="help")]
+            ])
+        )
+    elif data == "help_checkchannel":
+        await query.message.edit_text(
+            "✅ <b>Check Channel Status</b>\n\n"
+            "Usage: /checkchannel\n\n"
+            "This command checks the database channel status.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="help")]
+            ])
+        )
+    elif data == "help_users":
+        await query.message.edit_text(
+            "👥 <b>User Statistics</b>\n\n"
+            "Usage: /users\n\n"
+            "This command shows user statistics.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="help")]
+            ])
+        )
+    elif data == "help_stats":
+        await query.message.edit_text(
+            "📊 <b>Bot Statistics</b>\n\n"
+            "Usage: /stats\n\n"
+            "This command shows complete bot statistics.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="help")]
+            ])
+        )
+    elif data == "help_settings":
+        await query.message.edit_text(
+            "⚙️ <b>Main Settings</b>\n\n"
+            "Usage: /settings\n\n"
+            "This command opens the main settings panel.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="help")]
+            ])
+        )
+    elif data == "help_botsettings":
+        await query.message.edit_text(
+            "🎨 <b>Bot Settings</b>\n\n"
+            "Usage: /botsettings\n\n"
+            "This command configures bot appearance.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="help")]
+            ])
+        )
+    elif data == "help_files":
+        await query.message.edit_text(
+            "📁 <b>File Settings</b>\n\n"
+            "Usage: /files\n\n"
+            "This command configures file protection settings.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="help")]
+            ])
+        )
+    elif data == "help_forcesub":
+        await query.message.edit_text(
+            "📢 <b>Force Subscribe Settings</b>\n\n"
+            "Usage: /forcesub\n\n"
+            "This command configures force subscribe settings.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="help")]
+            ])
+        )
+    elif data == "help_shortener":
+        await query.message.edit_text(
+            "🔗 <b>URL Shortener</b>\n\n"
+            "Usage: /shortener URL\n\n"
+            "This command shortens URLs.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="help")]
+            ])
+        )
+    elif data == "help_ping":
+        await query.message.edit_text(
+            "🏓 <b>Ping Command</b>\n\n"
+            "Usage: /ping\n\n"
+            "This command checks bot status and ping.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="help")]
+            ])
+        )
 
-async def start_callback(client: Bot, query: CallbackQuery):
-    """Handle start/home button callback"""
-    await query.answer()
-    
-    # Edit the message to show start
-    await show_welcome_message(client, query.message)
-
-async def close_callback(client: Bot, query: CallbackQuery):
-    """Handle close button callback"""
-    await query.answer("Closed!")
-    await query.message.delete()
-
-async def help_command_callback(client: Bot, query: CallbackQuery):
-    """Handle help command buttons"""
-    await query.answer()
-    
-    command_map = {
-        "help_genlink": "/genlink",
-        "help_batch": "/batch",
-        "help_custom_batch": "/custom_batch",
-        "help_special_link": "/special_link",
-        "help_setchannel": "/setchannel",
-        "help_checkchannel": "/checkchannel",
-        "help_users": "/users",
-        "help_stats": "/stats",
-        "help_settings": "/settings",
-        "help_botsettings": "/botsettings",
-        "help_files": "/files",
-        "help_forcesub": "/forcesub",
-        "help_shortener": "/shortener",
-        "help_ping": "/ping"
-    }
-    
-    command = command_map.get(query.data)
-    if not command:
-        return
-    
-    # Show command info
-    command_info = {
-        "/genlink": "📝 Generate single file link\n\nForward a message from your database channel to get a shareable link.",
-        "/batch": "📦 Create batch link (sequential)\n\nForward first and last messages to create a batch link.",
-        "/custom_batch": "🎯 Create custom batch link\n\nForward specific messages to create a custom batch.",
-        "/special_link": "⭐ Link with custom message\n\nCreate a link that shows a custom message before sending files.",
-        "/setchannel": "📺 Configure database channel\n\nSet the channel where files are stored.",
-        "/checkchannel": "✅ Check channel status\n\nVerify database channel configuration.",
-        "/users": "👥 View user statistics\n\nSee total users, banned users, etc.",
-        "/stats": "📊 Complete bot statistics\n\nView detailed bot statistics.",
-        "/settings": "⚙️ Main settings panel\n\nConfigure all bot settings.",
-        "/botsettings": "🎨 Configure bot appearance\n\nCustomize bot messages and images.",
-        "/files": "📁 File protection settings\n\nConfigure file security options.",
-        "/forcesub": "📢 Force subscribe settings\n\nConfigure channel subscription requirements.",
-        "/shortener": "🔗 Shorten any URL\n\nUse configured URL shortener service.",
-        "/ping": "🏓 Check bot status\n\nTest bot responsiveness."
-    }
-    
-    info = command_info.get(command, "Command information not available.")
-    
-    buttons = [
-        [
-            InlineKeyboardButton("✅ Execute Command", callback_data=f"execute_{command[1:]}"),
-            InlineKeyboardButton("❌ Cancel", callback_data="close")
-        ]
-    ]
-    
-    keyboard = InlineKeyboardMarkup(buttons)
-    
-    await query.message.edit_text(
-        f"📋 <b>COMMAND INFO</b>\n\n{info}\n\n"
-        f"Command: <code>{command}</code>\n\n"
-        f"<i>Click Execute to run this command.</i>",
-        reply_markup=keyboard,
-        parse_mode=enums.ParseMode.HTML
-    )
-
-async def toggle_callback(client: Bot, query: CallbackQuery):
-    """Handle settings toggle callbacks"""
-    await query.answer()
-    
-    # Extract setting name from callback data
-    # Format: toggle_setting_name
-    setting_name = query.data.replace("toggle_", "")
+async def handle_toggle_callback(client: Bot, query: CallbackQuery):
+    """Handle toggle callbacks"""
+    data = query.data.replace("toggle_", "")
     
     # Get current settings
     settings = await client.db.get_settings()
-    current_value = settings.get(setting_name, False)
+    current_value = settings.get(data, False)
     
     # Toggle the value
     new_value = not current_value
     
     # Update in database
-    await client.db.update_setting(setting_name, new_value)
+    await client.db.update_setting(data, new_value)
     
     # Update local settings
-    client.settings[setting_name] = new_value
+    client.settings[data] = new_value
     
-    # Show appropriate response
-    setting_display = {
-        "protect_content": "Protect Content",
-        "hide_caption": "Hide Caption",
-        "channel_button": "Channel Button",
-        "auto_delete": "Auto Delete"
-    }
+    await query.answer(f"Setting updated: {new_value}")
     
-    display_name = setting_display.get(setting_name, setting_name)
-    status = "✅ ENABLED" if new_value else "❌ DISABLED"
-    
-    await query.message.edit_text(
-        f"✅ <b>Setting Updated!</b>\n\n"
-        f"{display_name}: {status}\n\n"
-        f"<i>The change has been saved.</i>",
-        parse_mode=enums.ParseMode.HTML
-    )
-    
-    # Refresh after 2 seconds
-    await asyncio.sleep(2)
-    
-    # Show updated settings page based on setting type
-    if setting_name in ["protect_content", "hide_caption", "channel_button"]:
+    # Refresh the settings page
+    if data in ["protect_content", "hide_caption", "channel_button"]:
         await files_command(client, query.message)
-    elif setting_name == "auto_delete":
+    elif data == "auto_delete":
         await auto_del_command(client, query.message)
 
-async def autodel_callback(client: Bot, query: CallbackQuery):
-    """Handle auto delete time selection"""
-    await query.answer()
-    
-    # Extract time from callback data
-    # Format: autodel_seconds
+async def handle_autodel_callback(client: Bot, query: CallbackQuery):
+    """Handle auto delete time callbacks"""
     try:
         seconds = int(query.data.replace("autodel_", ""))
-    except:
-        await query.answer("Invalid time selection!")
-        return
+        
+        # Update auto delete time
+        await client.db.update_setting("auto_delete_time", seconds)
+        
+        # Update local settings
+        client.settings["auto_delete_time"] = seconds
+        
+        await query.answer(f"Auto delete time set to {format_time(seconds)}")
+        
+        # Refresh the auto delete settings page
+        await auto_del_command(client, query.message)
     
-    # Update auto delete time
-    await client.db.update_setting("auto_delete_time", seconds)
-    
-    # Update local settings
-    client.settings["auto_delete_time"] = seconds
-    
-    # Format time display
-    time_display = format_time(seconds)
-    
-    await query.message.edit_text(
-        f"✅ <b>Auto Delete Time Updated!</b>\n\n"
-        f"⏱️ Delete Timer: {time_display}\n\n"
-        f"<i>Files will be deleted after {time_display}.</i>",
-        parse_mode=enums.ParseMode.HTML
-    )
-    
-    # Refresh after 2 seconds
-    await asyncio.sleep(2)
-    await auto_del_command(client, query.message)
+    except Exception as e:
+        logger.error(f"Error in autodel callback: {e}")
+        await query.answer("Error setting time!")
 
-async def reqfsub_callback(client: Bot, query: CallbackQuery):
-    """Handle request FSub toggle"""
-    await query.answer()
-    
-    # Extract action from callback data
-    # Format: reqfsub_on or reqfsub_off
+async def handle_reqfsub_callback(client: Bot, query: CallbackQuery):
+    """Handle request FSub callbacks"""
     action = query.data.replace("reqfsub_", "")
     new_value = (action == "on")
     
@@ -3341,230 +3349,300 @@ async def reqfsub_callback(client: Bot, query: CallbackQuery):
     await client.db.update_setting("request_fsub", new_value)
     client.settings["request_fsub"] = new_value
     
-    status = "✅ ENABLED" if new_value else "❌ DISABLED"
+    await query.answer(f"Request FSub {'enabled' if new_value else 'disabled'}")
     
-    await query.message.edit_text(
-        f"✅ <b>Request FSub Updated!</b>\n\n"
-        f"Request FSub Mode: {status}\n\n"
-        f"<i>The change has been saved.</i>",
-        parse_mode=enums.ParseMode.HTML
-    )
-    
-    # Refresh after 2 seconds
-    await asyncio.sleep(2)
+    # Refresh the settings page
     await req_fsub_command(client, query.message)
 
-async def botsettings_callback(client: Bot, query: CallbackQuery):
+async def handle_botsettings_callback(client: Bot, query: CallbackQuery):
     """Handle bot settings callbacks"""
-    await query.answer()
+    data = query.data.replace("botsettings_", "")
     
-    # Extract setting type from callback data
-    # Format: botsettings_type
-    setting_type = query.data.replace("botsettings_", "")
-    
-    if setting_type == "images":
-        await handle_images_setting(client, query)
-    elif setting_type == "welcome":
-        await handle_text_setting(client, query, "welcome_text", "Welcome Message")
-    elif setting_type == "help":
-        await handle_text_setting(client, query, "help_text", "Help Message")
-    elif setting_type == "about":
-        await handle_text_setting(client, query, "about_text", "About Message")
-    elif setting_type == "buttons":
-        await handle_button_setting(client, query)
-    elif setting_type == "preview":
+    if data == "images":
+        await handle_images_callback(client, query)
+    elif data == "welcome":
+        await handle_welcome_callback(client, query)
+    elif data == "help":
+        await handle_help_text_callback(client, query)
+    elif data == "about":
+        await handle_about_callback(client, query)
+    elif data == "buttons":
+        await handle_buttons_callback(client, query)
+    elif data == "preview":
+        await query.answer("Showing preview...")
         await show_welcome_message(client, query.message)
 
-async def handle_images_setting(client: Bot, query: CallbackQuery):
-    """Handle images setting"""
-    # Get current images
+async def handle_images_callback(client: Bot, query: CallbackQuery):
+    """Handle images callback"""
     settings = await client.db.get_settings()
     bot_pics = settings.get("bot_pics", Config.BOT_PICS)
     
+    text = (
+        "📸 <b>Welcome Images Settings</b>\n\n"
+        f"Current number of images: {len(bot_pics)}\n\n"
+        "To change images, add BOT_PICS to environment variables:\n"
+        "BOT_PICS=url1,url2,url3\n\n"
+        "Or use the bot settings command."
+    )
+    
     buttons = [
-        [
-            InlineKeyboardButton("✏️ Change Images", callback_data="change_images"),
-            InlineKeyboardButton("🔄 Reset to Default", callback_data="reset_images")
-        ],
-        [
-            InlineKeyboardButton("🔙 Back", callback_data="settings_back"),
-            InlineKeyboardButton("🔒 Close", callback_data="close")
-        ]
+        [InlineKeyboardButton("🔙 Back", callback_data="botsettings")],
+        [InlineKeyboardButton("🔒 Close", callback_data="close")]
     ]
     
-    keyboard = InlineKeyboardMarkup(buttons)
-    
     await query.message.edit_text(
-        f"📸 <b>WELCOME IMAGES SETTINGS</b>\n\n"
-        f"Current images: {len(bot_pics)}\n\n"
-        f"<i>Click below to modify images.</i>",
-        reply_markup=keyboard,
+        text,
+        reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode=enums.ParseMode.HTML
     )
 
-async def handle_text_setting(client: Bot, query: CallbackQuery, setting_key: str, display_name: str):
-    """Handle text setting"""
-    # Get current text
+async def handle_welcome_callback(client: Bot, query: CallbackQuery):
+    """Handle welcome text callback"""
     settings = await client.db.get_settings()
-    current_text = settings.get(setting_key, "")
+    welcome_text = settings.get("welcome_text", "")
     
-    # Store state for text input
-    user_id = query.from_user.id
-    client.text_setting_state[user_id] = {
-        "setting_key": setting_key,
-        "display_name": display_name
-    }
+    text = (
+        "💬 <b>Welcome Message Settings</b>\n\n"
+        f"Current welcome message:\n<code>{welcome_text[:200] or 'Not set'}</code>\n\n"
+        "To change, use environment variable:\n"
+        "WELCOME_TEXT=Your welcome message\n\n"
+        "Or edit in the database directly."
+    )
     
     buttons = [
-        [
-            InlineKeyboardButton("✏️ Edit Text", callback_data=f"edit_{setting_key}"),
-            InlineKeyboardButton("🔄 Reset to Default", callback_data=f"reset_{setting_key}")
-        ],
-        [
-            InlineKeyboardButton("🔙 Back", callback_data="settings_back"),
-            InlineKeyboardButton("🔒 Close", callback_data="close")
-        ]
+        [InlineKeyboardButton("🔙 Back", callback_data="botsettings")],
+        [InlineKeyboardButton("🔒 Close", callback_data="close")]
     ]
     
-    keyboard = InlineKeyboardMarkup(buttons)
-    
-    preview_text = current_text[:100] + "..." if len(current_text) > 100 else current_text
-    
     await query.message.edit_text(
-        f"💬 <b>{display_name.upper()} SETTINGS</b>\n\n"
-        f"Current text:\n<code>{preview_text or 'Not set'}</code>\n\n"
-        f"Available variables:\n"
-        f"• {{first}} - User's first name\n"
-        f"• {{last}} - User's last name\n"
-        f"• {{username}} - @username or 'None'\n"
-        f"• {{mention}} - Clickable mention\n"
-        f"• {{id}} - User ID\n\n"
-        f"<i>Click below to modify.</i>",
-        reply_markup=keyboard,
+        text,
+        reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode=enums.ParseMode.HTML
     )
 
-async def handle_button_setting(client: Bot, query: CallbackQuery):
-    """Handle button setting"""
-    # Get current buttons
+async def handle_help_text_callback(client: Bot, query: CallbackQuery):
+    """Handle help text callback"""
+    settings = await client.db.get_settings()
+    help_text = settings.get("help_text", "➪ I ᴀᴍ ᴀ ᴘʀɪᴠᴀᴛᴇ ғɪʟᴇ sʜᴀʀɪɴɢ ʙᴏᴛ, ᴍᴇᴀɴᴛ ᴛᴏ ᴘʀᴏᴠɪᴅᴇ ғɪʟᴇs ᴀɴᴅ ɴᴇᴄᴇssᴀʀʏ sᴛᴜғғ ᴛʜʀᴏᴜɢʜ sᴘᴇᴄɪᴀʟ ʟɪɴᴋ ғᴏʀ sᴘᴇᴄɪғɪᴄ ᴄʜᴀɴɴᴇʟs.")
+    
+    text = (
+        "📚 <b>Help Message Settings</b>\n\n"
+        f"Current help message:\n<code>{help_text[:200]}</code>\n\n"
+        "This is the help message users see when they use /help command."
+    )
+    
+    buttons = [
+        [InlineKeyboardButton("🔙 Back", callback_data="botsettings")],
+        [InlineKeyboardButton("🔒 Close", callback_data="close")]
+    ]
+    
+    await query.message.edit_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(buttons),
+        parse_mode=enums.ParseMode.HTML
+    )
+
+async def handle_about_callback(client: Bot, query: CallbackQuery):
+    """Handle about text callback"""
+    settings = await client.db.get_settings()
+    about_text = settings.get("about_text", "")
+    
+    text = (
+        "ℹ️ <b>About Message Settings</b>\n\n"
+        f"Current about message:\n<code>{about_text[:200] or 'Not set'}</code>\n\n"
+        "To change, use environment variable:\n"
+        "ABOUT_TEXT=Your about message\n\n"
+        "Or edit in the database directly."
+    )
+    
+    buttons = [
+        [InlineKeyboardButton("🔙 Back", callback_data="botsettings")],
+        [InlineKeyboardButton("🔒 Close", callback_data="close")]
+    ]
+    
+    await query.message.edit_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(buttons),
+        parse_mode=enums.ParseMode.HTML
+    )
+
+async def handle_buttons_callback(client: Bot, query: CallbackQuery):
+    """Handle buttons callback"""
     settings = await client.db.get_settings()
     button_string = settings.get("custom_button", "")
     
-    # Store state for button input
+    text = (
+        "🔘 <b>Custom Buttons Settings</b>\n\n"
+        f"Current button configuration:\n<code>{button_string or 'Not set'}</code>\n\n"
+        "Format: Button Text | URL (one per line)\n"
+        "For multiple buttons in same row:\n"
+        "Button1 | url1 : Button2 | url2"
+    )
+    
+    buttons = [
+        [InlineKeyboardButton("🔙 Back", callback_data="botsettings")],
+        [InlineKeyboardButton("🔒 Close", callback_data="close")]
+    ]
+    
+    await query.message.edit_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(buttons),
+        parse_mode=enums.ParseMode.HTML
+    )
+
+async def handle_settings_callback(client: Bot, query: CallbackQuery):
+    """Handle settings callbacks"""
+    data = query.data.replace("settings_", "")
+    
+    if data == "protection":
+        await query.answer("Protection settings")
+        # This would show protection settings
+        await files_command(client, query.message)
+    
+    elif data == "files":
+        await query.answer("File settings")
+        await files_command(client, query.message)
+    
+    elif data == "autodel":
+        await query.answer("Auto delete settings")
+        await auto_del_command(client, query.message)
+    
+    elif data == "forcesub":
+        await query.answer("Force subscribe settings")
+        await forcesub_command(client, query.message)
+    
+    elif data == "reqfsub":
+        await query.answer("Request FSub settings")
+        await req_fsub_command(client, query.message)
+
+async def handle_button_setting_callback(client: Bot, query: CallbackQuery):
+    """Handle button setting callback"""
     user_id = query.from_user.id
     client.button_setting_state[user_id] = True
     
-    buttons = [
-        [
-            InlineKeyboardButton("✏️ Edit Buttons", callback_data="edit_buttons"),
-            InlineKeyboardButton("🔄 Clear Buttons", callback_data="clear_buttons")
-        ],
-        [
-            InlineKeyboardButton("🔙 Back", callback_data="settings_back"),
-            InlineKeyboardButton("🔒 Close", callback_data="close")
-        ]
-    ]
-    
-    keyboard = InlineKeyboardMarkup(buttons)
-    
     await query.message.edit_text(
-        "🔘 <b>CUSTOM BUTTON SETUP</b>\n\n"
-        "Send me your button in this format:\n\n"
+        "🔘 <b>SET CUSTOM BUTTON</b>\n\n"
+        "Send me the button in this format:\n\n"
         "<code>Button Text | URL</code>\n\n"
-        "<b>Examples:</b>\n\n"
-        "Single button:\n"
-        "<code>Join Channel | https://t.me/channel</code>\n\n"
-        "Multiple buttons (one per line):\n"
-        "<code>Join Channel | https://t.me/channel\n"
-        "Support Group | https://t.me/support</code>\n\n"
-        "Two buttons in same row:\n"
-        "<code>Channel | https://t.me/ch : Support | https://t.me/sup</code>\n\n"
-        "<b>💡 Tips:</b>\n"
-        "• Use | to separate text and URL\n"
-        "• Use : to put buttons in same row\n"
-        "• Use new line for new row\n\n"
+        "Example:\n"
+        "<code>Join Channel | https://t.me/example</code>\n\n"
+        "For multiple buttons in same row:\n"
+        "<code>Button1 | url1 : Button2 | url2</code>\n\n"
         "Send <code>cancel</code> to cancel.",
-        reply_markup=keyboard,
         parse_mode=enums.ParseMode.HTML
     )
 
-async def handle_button_setting_text(client: Bot, message: Message):
-    """Handle button setting text input"""
-    user_id = message.from_user.id
-    
-    if message.text.lower() == "cancel":
-        if user_id in client.button_setting_state:
-            del client.button_setting_state[user_id]
-        await message.reply("❌ Button setup cancelled!")
-        return
+async def handle_broadcast_confirm(client: Bot, query: CallbackQuery):
+    """Handle broadcast confirmation"""
+    await query.answer("Starting broadcast...")
     
     try:
-        # Parse the button string
-        button_string = message.text.strip()
+        # Get the message to broadcast
+        original_message = query.message.reply_to_message
         
-        # Validate format by trying to parse it
-        test_buttons = parse_button_string(button_string)
-        
-        if not test_buttons:
-            await message.reply("❌ Invalid button format! Please check the format and try again.")
+        if not original_message:
+            await query.message.edit_text("❌ No message to broadcast!")
             return
         
-        # Save to database
-        await client.db.update_setting("custom_button", button_string)
-        client.settings["custom_button"] = button_string
+        # Get all users
+        all_users = await client.db.get_all_users()
+        total_users = len(all_users)
         
-        # Clear state
-        if user_id in client.button_setting_state:
-            del client.button_setting_state[user_id]
+        if total_users == 0:
+            await query.message.edit_text("❌ No users to broadcast to!")
+            return
         
-        await message.reply(
-            f"✅ <b>Custom Button Set!</b>\n\n"
-            f"Button Config:\n<code>{button_string}</code>\n\n"
-            f"<i>This button will appear with all files!</i>",
+        # Update message
+        await query.message.edit_text(
+            f"📢 <b>BROADCAST STARTED</b>\n\n"
+            f"Total users: {total_users}\n"
+            f"Sent: 0/{total_users}\n"
+            f"Failed: 0",
             parse_mode=enums.ParseMode.HTML
         )
         
+        # Broadcast to users
+        success = 0
+        failed = 0
+        
+        for user_id in all_users:
+            try:
+                # Skip if user is banned
+                if await client.db.is_user_banned(user_id):
+                    failed += 1
+                    continue
+                
+                # Forward the message
+                await original_message.copy(user_id)
+                success += 1
+                
+                # Update progress every 10 users
+                if (success + failed) % 10 == 0:
+                    try:
+                        await query.message.edit_text(
+                            f"📢 <b>BROADCAST IN PROGRESS</b>\n\n"
+                            f"Total users: {total_users}\n"
+                            f"Sent: {success}/{total_users}\n"
+                            f"Failed: {failed}",
+                            parse_mode=enums.ParseMode.HTML
+                        )
+                    except:
+                        pass
+                
+                # Small delay to avoid flood
+                await asyncio.sleep(0.1)
+                
+            except Exception as e:
+                failed += 1
+                logger.error(f"Error broadcasting to {user_id}: {e}")
+        
+        # Final update
+        await query.message.edit_text(
+            f"✅ <b>BROADCAST COMPLETED</b>\n\n"
+            f"Total users: {total_users}\n"
+            f"Successfully sent: {success}\n"
+            f"Failed: {failed}\n\n"
+            f"<i>Broadcast completed successfully!</i>",
+            parse_mode=enums.ParseMode.HTML
+        )
+    
     except Exception as e:
-        logger.error(f"Error setting buttons: {e}")
-        await message.reply("❌ Error setting buttons! Please check the format.")
+        logger.error(f"Error in broadcast: {e}")
+        await query.message.edit_text(
+            f"❌ <b>BROADCAST FAILED</b>\n\n"
+            f"Error: {str(e)}",
+            parse_mode=enums.ParseMode.HTML
+        )
 
-async def handle_text_setting_text(client: Bot, message: Message):
-    """Handle text setting text input"""
-    user_id = message.from_user.id
+async def handle_removechannel_confirm(client: Bot, query: CallbackQuery):
+    """Handle remove channel confirmation"""
+    await query.answer("Removing channel...")
     
-    if user_id not in client.text_setting_state:
-        return
+    try:
+        # Remove channel from database
+        await client.db.remove_db_channel()
+        client.db_channel = None
+        
+        await query.message.edit_text(
+            "✅ <b>Database channel removed successfully!</b>\n\n"
+            "You need to set a new channel using /setchannel\n"
+            "to enable file sharing again.",
+            parse_mode=enums.ParseMode.HTML
+        )
     
-    state = client.text_setting_state[user_id]
-    
-    if message.text.lower() == "cancel":
-        del client.text_setting_state[user_id]
-        await message.reply("❌ Text edit cancelled!")
-        return
-    
-    # Save the text
-    new_text = message.text
-    setting_key = state["setting_key"]
-    display_name = state["display_name"]
-    
-    # Save to database
-    await client.db.update_setting(setting_key, new_text)
-    client.settings[setting_key] = new_text
-    
-    # Clear state
-    del client.text_setting_state[user_id]
-    
-    await message.reply(
-        f"✅ <b>{display_name} Updated!</b>\n\n"
-        f"<i>The new {display_name.lower()} has been saved.</i>",
-        parse_mode=enums.ParseMode.HTML
-    )
+    except Exception as e:
+        logger.error(f"Error removing channel: {e}")
+        await query.message.edit_text(
+            f"❌ <b>Error removing channel!</b>\n\n"
+            f"Error: {str(e)}",
+            parse_mode=enums.ParseMode.HTML
+        )
 
 async def refresh_callback(client: Bot, query: CallbackQuery):
-    """Handle refresh button callback"""
+    """Handle refresh callback"""
     await query.answer("Refreshing...")
     
-    # Determine which page to refresh based on message content
+    # Check what type of page we're on
     message_text = query.message.text or ""
     
     if "USER STATISTICS" in message_text:
@@ -3575,28 +3653,19 @@ async def refresh_callback(client: Bot, query: CallbackQuery):
         await files_command(client, query.message)
     elif "AUTO DELETE SETTINGS" in message_text:
         await auto_del_command(client, query.message)
+    elif "REQUEST FSUB SETTINGS" in message_text:
+        await req_fsub_command(client, query.message)
+    elif "SETTINGS PANEL" in message_text:
+        await settings_command(client, query.message)
+    elif "ADMIN COMMANDS PANEL" in message_text:
+        await show_admin_help(client, query.message)
     else:
-        # Default: just delete and resend
-        await query.message.delete()
-        await query.message.reply("🔄 Refreshed!")
+        # Default: just show start
+        await show_welcome_message(client, query.message)
 
 
 # ===================================
-# SECTION 13: URL SHORTENER (Lines 3201-3300)
-# ===================================
-
-# Already implemented in helper functions and shortener_command
-
-
-# ===================================
-# SECTION 14: BOT SETTINGS (Lines 3301-3600)
-# ===================================
-
-# Already implemented in botsettings_command and related callbacks
-
-
-# ===================================
-# SECTION 15: WEB SERVER (Lines 3601-3700)
+# SECTION 13: WEB SERVER (Lines 3201-3300)
 # ===================================
 
 async def start_web_server():
@@ -3633,7 +3702,7 @@ async def start_web_server():
 
 
 # ===================================
-# SECTION 16: MAIN FUNCTION (Lines 3701-3800)
+# SECTION 14: MAIN FUNCTION (Lines 3301-3400)
 # ===================================
 
 async def main():
@@ -3657,6 +3726,9 @@ async def main():
         if not await bot.start():
             logger.error("Failed to start bot. Exiting.")
             return
+        
+        # Set up callback handler
+        await bot.setup_callbacks()
         
         logger.info("✅ Bot is now running!")
         
