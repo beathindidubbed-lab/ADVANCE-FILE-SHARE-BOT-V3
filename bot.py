@@ -1,3 +1,8 @@
+"""
+Advanced Auto Filter Bot V3 - Unified Version
+All features in one file - No plugin system
+"""
+
 import sys
 import logging
 import asyncio
@@ -31,24 +36,6 @@ logging.basicConfig(
 logging.getLogger("pyrogram").setLevel(logging.WARNING)
 LOGGER = logging.getLogger(__name__)
 
-# ============================================================================
-# WEB SERVER FOR RENDER (FIXES SIGTERM & KEEPS BOT ONLINE)
-# ============================================================================
-
-async def handle_route(request):
-    return web.Response(text="Bot is Running Successfully on Render!")
-
-async def start_web_server():
-    """Starts the web server for Render health checks"""
-    app = web.Application()
-    app.router.add_get("/", handle_route)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    # Render assigns the port via environment variable
-    port = int(os.environ.get("PORT", 8080))
-    site = web.TCPSite(runner, "0.0.0.0", port)
-    await site.start()
-    LOGGER.info(f"✅ Web Server started on port {port}")
 
 # ============================================================================
 # BOT CLASS
@@ -56,16 +43,8 @@ async def start_web_server():
 
 class Bot(Client):
     def __init__(self):
-        # Import config inside class to avoid circular imports if config uses Bot
-        try:
-            from config import API_ID, API_HASH, BOT_TOKEN, WORKERS
-        except ImportError:
-            # Fallbacks if config.py is missing
-            API_ID = int(os.environ.get("API_ID", 0))
-            API_HASH = os.environ.get("API_HASH", "")
-            BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
-            WORKERS = int(os.environ.get("WORKERS", 4))
-
+        from config import API_ID, API_HASH, BOT_TOKEN, WORKERS
+        
         super().__init__(
             name="AdvanceAutoFilterBot",
             api_id=API_ID,
@@ -96,30 +75,36 @@ class Bot(Client):
             await self.db.connect()
             LOGGER.info("✅ Database Connected")
         except Exception as e:
-            LOGGER.warning(f"⚠️ Database Connection Error: {e}")
+            LOGGER.warning(f"⚠️ Database: {e}")
             self.db = None
         
+        LOGGER.info("")
         LOGGER.info("=" * 70)
         LOGGER.info("🎉 BOT IS READY!")
         LOGGER.info(f"   Bot: @{self.username}")
         LOGGER.info(f"   ID: {self.id}")
         LOGGER.info("=" * 70)
+        LOGGER.info("")
 
     async def stop(self, *args):
         await super().stop()
         LOGGER.info("❌ Bot Stopped")
 
+
 # ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
 
+# Encoding/Decoding functions
 async def encode(string: str) -> str:
+    """Encode string to base64-like format"""
     import base64
     string_bytes = string.encode("ascii")
     base64_bytes = base64.urlsafe_b64encode(string_bytes)
     return base64_bytes.decode("ascii").rstrip("=")
 
 async def decode(base64_string: str) -> str:
+    """Decode base64-like format to string"""
     import base64
     base64_string += "=" * (-len(base64_string) % 4)
     base64_bytes = base64_string.encode("ascii")
@@ -127,33 +112,50 @@ async def decode(base64_string: str) -> str:
     return string_bytes.decode("ascii")
 
 async def is_subscribed(client: Client, user_id: int, channels: list) -> bool:
+    """Check if user is subscribed to all channels"""
     for channel_id in channels:
-        if channel_id == 0: continue
+        if channel_id == 0:
+            continue
         try:
             member = await client.get_chat_member(channel_id, user_id)
             if member.status not in ["administrator", "creator", "member"]:
                 return False
-        except UserNotParticipant: return False
-        except: return False
+        except UserNotParticipant:
+            return False
+        except:
+            return False
     return True
 
 async def delete_files(messages: list, client: Client, notification: Message, link: str):
+    """Auto-delete files after specified time"""
     from config import AUTO_DELETE_TIME
     await asyncio.sleep(AUTO_DELETE_TIME)
+    
     for msg in messages:
-        try: await msg.delete()
-        except: pass
+        try:
+            await msg.delete()
+        except:
+            pass
+    
     try:
         await notification.edit_text(
-            f"⏱️ <b>Files Deleted!</b>\n\nClick below to get files again:",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔗 Get Files Again", url=link)]])
+            f"⏱️ <b>Files Deleted!</b>\n\n"
+            f"Click below to get files again:",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔗 Get Files Again", url=link)]
+            ])
         )
-    except: pass
+    except:
+        pass
 
 def parse_custom_buttons(button_string: str) -> list:
-    if not button_string: return []
+    """Parse custom button string to button list"""
+    if not button_string:
+        return []
+    
     buttons = []
     lines = button_string.strip().split('\n')
+    
     for line in lines:
         if ':' in line:
             button_row = []
@@ -162,294 +164,1256 @@ def parse_custom_buttons(button_string: str) -> list:
                 if '|' in pair:
                     parts = pair.split('|', 1)
                     if len(parts) == 2:
-                        button_row.append(InlineKeyboardButton(parts[0].strip(), url=parts[1].strip()))
-            if button_row: buttons.append(button_row)
+                        text = parts[0].strip()
+                        url = parts[1].strip()
+                        button_row.append(InlineKeyboardButton(text, url=url))
+            if button_row:
+                buttons.append(button_row)
         elif '|' in line:
             parts = line.split('|', 1)
             if len(parts) == 2:
-                buttons.append([InlineKeyboardButton(parts[0].strip(), url=parts[1].strip())])
+                text = parts[0].strip()
+                url = parts[1].strip()
+                buttons.append([InlineKeyboardButton(text, url=url)])
+    
     return buttons
 
-# ============================================================================
-# START COMMAND & FILE HANDLER
-# ============================================================================
+"""
+============================================================================
+Start Command - Welcome users and handle file links
+Complete file sharing functionality
+============================================================================
+"""
+
 
 @Client.on_message(filters.command("start") & filters.private)
 async def start_command(client: Client, message: Message):
+    """Handle /start command"""
+    
     user_id = message.from_user.id
     
-    # Database check
+    # Add user to database
     if hasattr(client, "db") and client.db:
         if not await client.db.is_user_exist(user_id):
             await client.db.add_user(user_id)
+        
+        # Check if banned
         if await client.db.is_user_banned(user_id):
-            await message.reply_text("🚫 <b>You are banned!</b>\n\nContact support.", quote=True)
+            await message.reply_text(
+                "🚫 <b>You are banned!</b>\n\nContact support for help.",
+                quote=True
+            )
             return
     
-    # Handle File Link
+    # Check for file parameter
     if len(message.command) > 1:
         file_param = message.command[1]
         await handle_file_request(client, message, file_param)
         return
     
-    # SHOW WELCOME (Updated with your Requested Text)
+    # Show welcome message
     await show_welcome(client, message)
 
+
 async def show_welcome(client: Client, message: Message):
-    import config
+    """Show welcome screen"""
     
-    # YOUR REQUESTED TEXT STYLE
-    welcome_text = (
-        f"👋 ʜᴇʟʟᴏ {message.from_user.mention},\n\n"
-        f"➪ I ᴀᴍ ᴀ ᴘʀɪᴠᴀᴛᴇ ғɪʟᴇ sʜᴀʀɪɴɢ ʙᴏᴛ, ᴍᴇᴀɴᴛ ᴛᴏ ᴘʀᴏᴠɪᴅᴇ ғɪʟᴇs ᴀɴᴅ ɴᴇᴄᴇssᴀʀʏ sᴛᴜғғ ᴛʜʀᴏᴜɢʜ sᴘᴇᴄɪᴀʟ ʟɪɴᴋ ғᴏʀ sᴘᴇᴄɪғɪᴄ ᴄʜᴀɴɴᴇʟs."
+    # Get random welcome image
+    pic = random.choice(BOT_PICS) if BOT_PICS else None
+    
+    # Format welcome text
+    welcome_text = WELCOME_TEXT.format(
+        first=message.from_user.first_name,
+        last=message.from_user.last_name or "",
+        username=f"@{message.from_user.username}" if message.from_user.username else "None",
+        mention=message.from_user.mention,
+        id=message.from_user.id
     )
     
+    # Create buttons
     buttons = [
-        [InlineKeyboardButton("📚 Help", callback_data="help"), InlineKeyboardButton("ℹ️ About", callback_data="about")]
+        [
+            InlineKeyboardButton("📚 Help", callback_data="help"),
+            InlineKeyboardButton("ℹ️ About", callback_data="about")
+        ]
     ]
-    if config.UPDATES_CHANNEL:
-        buttons.append([InlineKeyboardButton("📢 Updates Channel", url=f"https://t.me/{config.UPDATES_CHANNEL.replace('@', '')}")])
-    if config.SUPPORT_CHAT:
-        buttons.append([InlineKeyboardButton("💬 Support Chat", url=f"https://t.me/{config.SUPPORT_CHAT.replace('@', '')}")])
-    if config.CUSTOM_BUTTONS:
-        buttons.extend(parse_custom_buttons(config.CUSTOM_BUTTONS))
-    buttons.append([InlineKeyboardButton("🔐 Close", callback_data="close")])
+    
+    # Add channel/support buttons
+    if UPDATES_CHANNEL:
+        buttons.append([
+            InlineKeyboardButton("📢 Updates Channel", url=f"https://t.me/{UPDATES_CHANNEL.replace('@', '')}")
+        ])
+    
+    if SUPPORT_CHAT:
+        buttons.append([
+            InlineKeyboardButton("💬 Support Chat", url=f"https://t.me/{SUPPORT_CHAT.replace('@', '')}")
+        ])
+    
+    # Parse custom buttons
+    if CUSTOM_BUTTONS:
+        custom_btns = parse_custom_buttons(CUSTOM_BUTTONS)
+        buttons.extend(custom_btns)
+    
+    buttons.append([
+        InlineKeyboardButton("🔐 Close", callback_data="close")
+    ])
     
     reply_markup = InlineKeyboardMarkup(buttons)
     
-    # Try to send with Pic if available
-    if config.BOT_PICS:
+    # Send with image
+    if pic:
         try:
             await message.reply_photo(
-                photo=random.choice(config.BOT_PICS),
+                photo=pic,
                 caption=welcome_text,
                 reply_markup=reply_markup,
                 quote=True
             )
             return
-        except: pass
+        except:
+            pass
     
-    await message.reply_text(text=welcome_text, reply_markup=reply_markup, quote=True)
+    # Fallback to text
+    await message.reply_text(
+        text=welcome_text,
+        reply_markup=reply_markup,
+        quote=True
+    )
+
 
 async def handle_file_request(client: Client, message: Message, file_param: str):
-    import config
+    """Handle file sharing requests"""
+    
     user_id = message.from_user.id
     
-    # Force Subscribe Check
-    if config.FORCE_SUB_CHANNELS:
-        if not await is_subscribed(client, user_id, config.FORCE_SUB_CHANNELS):
+    # Check force subscribe
+    if FORCE_SUB_CHANNELS:
+        is_joined = await is_subscribed(client, user_id, FORCE_SUB_CHANNELS)
+        
+        if not is_joined:
+            # Show force subscribe message
             buttons = []
-            for channel_id in config.FORCE_SUB_CHANNELS:
-                if channel_id == 0: continue
+            
+            for channel_id in FORCE_SUB_CHANNELS:
+                if channel_id == 0:
+                    continue
+                
                 try:
                     chat = await client.get_chat(channel_id)
-                    if config.REQUEST_FSUB:
-                        invite = await client.create_chat_invite_link(channel_id, creates_join_request=True)
-                        buttons.append([InlineKeyboardButton(f"📢 Request Join {chat.title}", url=invite.invite_link)])
+                    
+                    # Generate invite link
+                    if REQUEST_FSUB:
+                        # Request join mode
+                        try:
+                            invite_link = await client.create_chat_invite_link(
+                                channel_id,
+                                creates_join_request=True
+                            )
+                            buttons.append([
+                                InlineKeyboardButton(
+                                    f"📢 Request to Join {chat.title}",
+                                    url=invite_link.invite_link
+                                )
+                            ])
+                        except:
+                            buttons.append([
+                                InlineKeyboardButton(
+                                    f"📢 Join {chat.title}",
+                                    url=f"https://t.me/{chat.username}" if chat.username else f"https://t.me/c/{str(channel_id)[4:]}"
+                                )
+                            ])
                     else:
-                        url = f"https://t.me/{chat.username}" if chat.username else (await client.create_chat_invite_link(channel_id)).invite_link
-                        buttons.append([InlineKeyboardButton(f"📢 Join {chat.title}", url=url)])
-                except: pass
+                        # Direct join mode
+                        if chat.username:
+                            buttons.append([
+                                InlineKeyboardButton(
+                                    f"📢 Join {chat.title}",
+                                    url=f"https://t.me/{chat.username}"
+                                )
+                            ])
+                        else:
+                            try:
+                                invite_link = await client.create_chat_invite_link(channel_id)
+                                buttons.append([
+                                    InlineKeyboardButton(
+                                        f"📢 Join {chat.title}",
+                                        url=invite_link.invite_link
+                                    )
+                                ])
+                            except:
+                                pass
+                except:
+                    pass
             
-            buttons.append([InlineKeyboardButton("🔄 Try Again", url=f"https://t.me/{client.username}?start={file_param}")])
+            buttons.append([
+                InlineKeyboardButton("🔄 Try Again", url=f"https://t.me/{client.username}?start={file_param}")
+            ])
+            
+            # Format force sub text
+            force_text = FORCE_SUB_TEXT.format(
+                first=message.from_user.first_name,
+                last=message.from_user.last_name or "",
+                username=f"@{message.from_user.username}" if message.from_user.username else "None",
+                mention=message.from_user.mention,
+                id=message.from_user.id
+            )
+            
             await message.reply_text(
-                config.FORCE_SUB_TEXT.format(mention=message.from_user.mention, first=message.from_user.first_name, last=message.from_user.last_name or "", username=message.from_user.username or "", id=message.from_user.id),
+                force_text,
                 reply_markup=InlineKeyboardMarkup(buttons),
                 quote=True
             )
             return
-
-    # Handle Link Types
+    
+    # Decode file parameter
     try:
         decoded = await decode(file_param)
-        if decoded.startswith("get-"):
-            await send_single_file(client, message, decoded)
-        elif decoded.startswith("custombatch-"):
-            await send_custom_batch(client, message, decoded)
-        else:
-            await handle_special_link(client, message, file_param)
     except:
-        await message.reply_text("❌ <b>Invalid Link!</b>", quote=True)
+        await message.reply_text("❌ <b>Invalid link!</b>", quote=True)
+        return
+    
+    # Handle different link types
+    if decoded.startswith("get-"):
+        # Single file
+        await send_single_file(client, message, decoded)
+    elif decoded.startswith("custombatch-"):
+        # Custom batch
+        await send_custom_batch(client, message, decoded)
+    else:
+        await message.reply_text("❌ <b>Unknown link type!</b>", quote=True)
 
-async def send_single_file(client, message, decoded):
-    import config
+
+async def send_single_file(client: Client, message: Message, decoded: str):
+    """Send single file"""
+    
+    if not hasattr(client, 'db_channel') or not client.db_channel:
+        await message.reply_text("❌ <b>Bot not configured properly!</b>", quote=True)
+        return
+    
     try:
+        # Extract message ID
         file_id = int(decoded.split("-")[1])
         channel_id = abs(client.db_channel.id)
         msg_id = file_id // channel_id
+        
+        # Fetch message
         file_msg = await client.get_messages(client.db_channel.id, msg_id)
         
         if not file_msg:
-            return await message.reply_text("❌ File not found.")
-
-        caption = "" if config.HIDE_CAPTION else (file_msg.caption or "")
-        if config.CUSTOM_CAPTION and not config.HIDE_CAPTION:
-            media = file_msg.document or file_msg.video or file_msg.audio
-            f_name = getattr(media, 'file_name', 'File')
-            f_size = f"{getattr(media, 'file_size', 0) / (1024*1024):.2f} MB"
-            caption = config.CUSTOM_CAPTION.format(filename=f_name, filesize=f_size, previouscaption=file_msg.caption or "")
-
-        reply_markup = InlineKeyboardMarkup(parse_custom_buttons(config.CUSTOM_BUTTONS)) if (config.CHANNEL_BUTTON and config.CUSTOM_BUTTONS) else None
+            await message.reply_text("❌ <b>File not found!</b>", quote=True)
+            return
         
+        # Prepare caption
+        caption = file_msg.caption or ""
+        
+        if CUSTOM_CAPTION:
+            # Get file info
+            file_name = "Unknown"
+            file_size = "Unknown"
+            
+            if file_msg.document:
+                file_name = file_msg.document.file_name
+                file_size = f"{file_msg.document.file_size / (1024*1024):.2f} MB"
+            elif file_msg.video:
+                file_name = file_msg.video.file_name or "video.mp4"
+                file_size = f"{file_msg.video.file_size / (1024*1024):.2f} MB"
+            elif file_msg.audio:
+                file_name = file_msg.audio.file_name or "audio.mp3"
+                file_size = f"{file_msg.audio.file_size / (1024*1024):.2f} MB"
+            
+            # Format custom caption
+            caption = CUSTOM_CAPTION.format(
+                filename=file_name,
+                filesize=file_size,
+                previouscaption=caption if not HIDE_CAPTION else ""
+            )
+        elif HIDE_CAPTION:
+            caption = ""
+        
+        # Add custom button
+        reply_markup = None
+        if CHANNEL_BUTTON and CUSTOM_BUTTONS:
+            custom_btns = parse_custom_buttons(CUSTOM_BUTTONS)
+            if custom_btns:
+                reply_markup = InlineKeyboardMarkup(custom_btns)
+        
+        # Copy message
         sent_msg = await file_msg.copy(
             chat_id=message.chat.id,
             caption=caption,
             reply_markup=reply_markup,
-            protect_content=config.PROTECT_CONTENT
+            protect_content=PROTECT_CONTENT
         )
         
-        if config.AUTO_DELETE_TIME > 0:
+        # Auto delete if enabled
+        if AUTO_DELETE_TIME > 0:
+            # Send notification
             link = f"https://t.me/{client.username}?start={await encode(decoded)}"
-            notif = await message.reply_text(f"⏱️ <b>Auto-Delete in {config.AUTO_DELETE_TIME//60}m</b>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔗 Get Again", url=link)]]))
-            asyncio.create_task(delete_files([sent_msg], client, notif, link))
-    except Exception as e:
-        await message.reply_text(f"❌ Error: {e}")
-
-async def send_custom_batch(client, message, decoded):
-    import config
-    try:
-        parts = decoded.split("-")[1:]
-        channel_id = abs(client.db_channel.id)
-        msg_ids = [int(p) // channel_id for p in parts]
-        sent_msgs = []
-        for m_id in msg_ids:
-            try:
-                m = await client.get_messages(client.db_channel.id, m_id)
-                s = await m.copy(chat_id=message.chat.id, protect_content=config.PROTECT_CONTENT)
-                sent_msgs.append(s)
-            except: pass
-        
-        if config.AUTO_DELETE_TIME > 0 and sent_msgs:
-            link = f"https://t.me/{client.username}?start={await encode(decoded)}"
-            notif = await message.reply_text("⏱️ <b>Batch Auto-Delete Active</b>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔗 Get Again", url=link)]]))
-            asyncio.create_task(delete_files(sent_msgs, client, notif, link))
-    except Exception as e:
-        await message.reply_text(f"❌ Error: {e}")
-
-# ============================================================================
-# SPECIAL LINK, SHORTENER & SETTINGS HANDLERS
-# ============================================================================
-
-async def handle_special_link(client, message, file_param):
-    if hasattr(client, "db") and client.db:
-        special_data = await client.db.settings.find_one({"_id": f"special_{file_param}"})
-        if special_data and 'message' in special_data:
-            await message.reply_text(special_data['message'], quote=True)
-
-@Client.on_message(filters.private & filters.user(os.environ.get("ADMINS", "").split()) & filters.command("special_link"))
-async def special_link_command(client: Client, message: Message):
-    if not hasattr(client, "db_channel"): return await message.reply_text("❌ DB Channel not set.")
-    await message.reply_text("🌟 <b>Forward messages from DB Channel and send /done</b>")
-    ids = []
-    while True:
-        try:
-            msg = await client.listen(message.chat.id, timeout=300)
-            if msg.text == '/done': break
-            if msg.forward_from_chat and msg.forward_from_chat.id == client.db_channel.id:
-                ids.append(msg.forward_from_message_id)
-                await msg.reply_text(f"✅ Added! Total: {len(ids)}")
-        except: return
+            
+            notification = await message.reply_text(
+                f"⏱️ <b>Auto-Delete Enabled!</b>\n\n"
+                f"This file will be deleted in <code>{AUTO_DELETE_TIME // 60}</code> minutes.\n\n"
+                f"Click below to get the file again after deletion:",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔗 Click Here", url=link)],
+                    [InlineKeyboardButton("🔒 Close", callback_data="close")]
+                ]),
+                quote=True
+            )
+            
+            # Schedule deletion
+            await delete_files([sent_msg], client, notification, link)
     
-    if not ids: return
-    await message.reply_text("🌟 <b>Send Custom Message for this link:</b>")
+    except Exception as e:
+        await message.reply_text(f"❌ <b>Error:</b> <code>{str(e)}</code>", quote=True)
+
+
+async def send_custom_batch(client: Client, message: Message, decoded: str):
+    """Send custom batch files"""
+    
+    if not hasattr(client, 'db_channel') or not client.db_channel:
+        await message.reply_text("❌ <b>Bot not configured properly!</b>", quote=True)
+        return
+    
     try:
-        custom = await client.listen(message.chat.id)
-        txt = custom.text or "Files:"
-        cid = abs(client.db_channel.id)
-        l_str = f"get-{ids[0]*cid}" if len(ids)==1 else f"custombatch-{'-'.join([str(i*cid) for i in ids])}"
-        enc = await encode(l_str)
-        await client.db.settings.update_one({"_id": f"special_{enc}"}, {"$set": {"message": txt}}, upsert=True)
-        await message.reply_text(f"✅ <b>Link:</b> <code>https://t.me/{client.username}?start={enc}</code>")
-    except: pass
-
-@Client.on_message(filters.private & filters.command("shortener"))
-async def shortener_command(client, message):
-    if len(message.command) < 2: return await message.reply_text("Usage: /shortener [URL]")
-    url = message.command[1]
-    async with aiohttp.ClientSession() as s:
-        async with s.get(f"https://ulvis.net/api.php?url={url}") as r:
-            if r.status == 200:
-                short = await r.text()
-                await message.reply_text(f"✅ <b>Shortened:</b> <code>{short}</code>")
-
-# ============================================================================
-# GENLINK, BATCH & ADMIN CMDS (Rest of your features)
-# ============================================================================
-
-@Client.on_message(filters.private & filters.command("genlink"))
-async def genlink_command(client, message):
-    if not hasattr(client, "db_channel"): return await message.reply_text("❌ Configure DB Channel first.")
-    await message.reply_text("Forward message from DB Channel...")
-    try:
-        msg = await client.listen(message.chat.id, timeout=60, filters=filters.forwarded)
-        if msg.forward_from_chat.id != client.db_channel.id: return await message.reply_text("❌ Not from DB Channel.")
+        # Extract message IDs
+        parts = decoded.split("-")[1:]  # Skip "custombatch"
+        channel_id = abs(client.db_channel.id)
+        msg_ids = [int(part) // channel_id for part in parts]
         
-        cid = abs(client.db_channel.id)
-        enc = await encode(f"get-{msg.forward_from_message_id * cid}")
-        link = f"https://t.me/{client.username}?start={enc}"
-        await message.reply_text(f"✅ <b>Link:</b>\n<code>{link}</code>")
-    except: await message.reply_text("Timeout.")
-
-@Client.on_message(filters.private & filters.command("batch"))
-async def batch_command(client, message):
-    if not hasattr(client, "db_channel"): return await message.reply_text("❌ Configure DB Channel first.")
-    await message.reply_text("Forward FIRST message from DB Channel...")
-    try:
-        first = await client.listen(message.chat.id, timeout=60, filters=filters.forwarded)
-        await message.reply_text("Forward LAST message from DB Channel...")
-        last = await client.listen(message.chat.id, timeout=60, filters=filters.forwarded)
+        # Send files
+        status_msg = await message.reply_text(
+            f"📦 <b>Sending {len(msg_ids)} files...</b>",
+            quote=True
+        )
         
-        cid = abs(client.db_channel.id)
-        enc = await encode(f"get-{first.forward_from_message_id * cid}-{last.forward_from_message_id * cid}")
-        link = f"https://t.me/{client.username}?start={enc}"
-        await message.reply_text(f"✅ <b>Batch Link:</b>\n<code>{link}</code>")
-    except: await message.reply_text("Timeout or Error.")
+        sent_messages = []
+        
+        for msg_id in msg_ids:
+            try:
+                file_msg = await client.get_messages(client.db_channel.id, msg_id)
+                
+                if file_msg:
+                    # Prepare caption
+                    caption = file_msg.caption or ""
+                    
+                    if CUSTOM_CAPTION:
+                        file_name = "Unknown"
+                        file_size = "Unknown"
+                        
+                        if file_msg.document:
+                            file_name = file_msg.document.file_name
+                            file_size = f"{file_msg.document.file_size / (1024*1024):.2f} MB"
+                        
+                        caption = CUSTOM_CAPTION.format(
+                            filename=file_name,
+                            filesize=file_size,
+                            previouscaption=caption if not HIDE_CAPTION else ""
+                        )
+                    elif HIDE_CAPTION:
+                        caption = ""
+                    
+                    # Copy message
+                    sent = await file_msg.copy(
+                        chat_id=message.chat.id,
+                        caption=caption,
+                        protect_content=PROTECT_CONTENT
+                    )
+                    sent_messages.append(sent)
+            except:
+                pass
+        
+        await status_msg.edit_text(f"✅ <b>Sent {len(sent_messages)} files!</b>")
+        
+        # Auto delete if enabled
+        if AUTO_DELETE_TIME > 0 and sent_messages:
+            link = f"https://t.me/{client.username}?start={await encode(decoded)}"
+            
+            notification = await message.reply_text(
+                f"⏱️ <b>Auto-Delete Enabled!</b>\n\n"
+                f"These files will be deleted in <code>{AUTO_DELETE_TIME // 60}</code> minutes.\n\n"
+                f"Click below to get files again after deletion:",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔗 Click Here", url=link)],
+                    [InlineKeyboardButton("🔒 Close", callback_data="close")]
+                ]),
+                quote=True
+            )
+            
+            await delete_files(sent_messages, client, notification, link)
+    
+    except Exception as e:
+        await message.reply_text(f"❌ <b>Error:</b> <code>{str(e)}</code>", quote=True)
 
-@Client.on_message(filters.private & filters.command("settings"))
-async def settings_command(client, message):
-    buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔒 Protection", callback_data="setting_protection"), InlineKeyboardButton("📁 Files", callback_data="setting_files")],
-        [InlineKeyboardButton("🗑️ Auto Delete", callback_data="setting_auto_delete"), InlineKeyboardButton("📢 Force Sub", callback_data="setting_force_sub")],
-        [InlineKeyboardButton("🔒 Close", callback_data="close")]
-    ])
-    await message.reply_text("⚙️ <b>SETTINGS PANEL</b>", reply_markup=buttons)
+
+"""
+============================================================================
+MAXIMUM VERBOSITY - Logs EVERYTHING
+============================================================================
+"""
+
+# Set up detailed logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+@Client.on_message()
+async def log_all_messages(client: Client, message: Message):
+    """Logs EVERY single message received"""
+    
+    logger.info("=" * 80)
+    logger.info("MESSAGE RECEIVED!")
+    logger.info(f"Chat ID: {message.chat.id}")
+    logger.info(f"Chat Type: {message.chat.type}")
+    logger.info(f"From User: {message.from_user.first_name if message.from_user else 'None'}")
+    logger.info(f"User ID: {message.from_user.id if message.from_user else 'None'}")
+    logger.info(f"Text: {message.text}")
+    logger.info(f"Message ID: {message.id}")
+    logger.info("=" * 80)
+    
+    # Also print to console
+    print("=" * 80)
+    print("🔔 MESSAGE RECEIVED!")
+    print(f"From: {message.from_user.first_name if message.from_user else 'Unknown'}")
+    print(f"User ID: {message.from_user.id if message.from_user else 'Unknown'}")
+    print(f"Text: {message.text}")
+    print(f"Chat Type: {message.chat.type}")
+    print("=" * 80)
+    
+    # Try to respond
+    try:
+        await message.reply_text(
+            f"✅ <b>MESSAGE RECEIVED!</b>\n\n"
+            f"<b>Your message:</b> {message.text}\n"
+            f"<b>Your ID:</b> <code>{message.from_user.id}</code>\n"
+            f"<b>Chat Type:</b> {message.chat.type}\n\n"
+            f"<b>Bot is definitely working!</b>",
+            quote=True
+        )
+        print("✅ Response sent successfully!")
+    except Exception as e:
+        print(f"❌ Failed to respond: {e}")
+        logger.error(f"Failed to respond: {e}")
 
 @Client.on_callback_query()
-async def cb_handler(client, query):
-    data = query.data
-    if data == "close": await query.message.delete()
-    elif data == "help": await query.answer("Use commands to interact!", show_alert=True)
-    elif data == "about": await query.answer("Advanced Auto Filter Bot V3", show_alert=True)
-    elif data.startswith("setting_"): await query.answer("Settings Menu Accessed", show_alert=False)
-    # Add other callbacks from your original code here if needed
+async def log_callbacks(client: Client, query: CallbackQuery):
+    """Logs all callback queries"""
+    print(f"🔘 CALLBACK: {query.data} from {query.from_user.id}")
 
-# ============================================================================
-# MAIN EXECUTION (FIXED FOR RENDER)
-# ============================================================================
+
+
+"""
+============================================================================
+Special Link Command - Create Links with Custom Start Message
+Get an editable link with custom message (moderators only)
+============================================================================
+"""
+
+# Store special links in database
+special_links = {}
+
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("special_link"))
+async def special_link_command(client: Client, message: Message):
+    """Generate special link with custom message"""
+    
+    if not hasattr(client, "db_channel"):
+        await message.reply_text(
+            "❌ <b>Database Channel Not Configured!</b>",
+            quote=True
+        )
+        return
+    
+    await message.reply_text(
+        "🌟 <b>SPECIAL LINK GENERATOR</b>\n\n"
+        "<b>Step 1:</b> Forward message(s) from database channel\n"
+        "Send /done when finished\n\n"
+        "⏱️ <b>Waiting for messages...</b>",
+        quote=True
+    )
+    
+    message_ids = []
+    
+    # Collect messages
+    while True:
+        try:
+            user_msg = await client.listen(message.chat.id, timeout=300)
+            
+            if user_msg.text and user_msg.text.lower() == '/done':
+                break
+            
+            if user_msg.forward_from_chat and user_msg.forward_from_chat.id == client.db_channel.id:
+                msg_id = user_msg.forward_from_message_id
+                message_ids.append(msg_id)
+                await user_msg.reply_text(
+                    f"✅ Added! Total: {len(message_ids)}\n\nSend more or /done",
+                    quote=True
+                )
+            else:
+                await user_msg.reply_text("❌ Forward from database channel!", quote=True)
+        
+        except:
+            await message.reply_text("❌ Timeout!", quote=True)
+            return
+    
+    if not message_ids:
+        await message.reply_text("❌ No messages added!", quote=True)
+        return
+    
+    # Ask for custom message
+    await message.reply_text(
+        "🌟 <b>Step 2:</b> Send custom start message\n\n"
+        "This message will appear when users click the link.\n\n"
+        "<b>Example:</b>\n"
+        "🎬 Welcome! Here are your movies!\n"
+        "Enjoy watching! 🍿\n\n"
+        "⏱️ <b>Waiting for message...</b>",
+        quote=True
+    )
+    
+    try:
+        custom_msg = await client.listen(message.chat.id, timeout=300)
+        custom_text = custom_msg.text or custom_msg.caption or "Here are your files!"
+    except:
+        await message.reply_text("❌ Timeout!", quote=True)
+        return
+    
+    # Generate special link
+    try:
+        channel_id = abs(client.db_channel.id)
+        
+        # Encode message IDs
+        if len(message_ids) == 1:
+            converted = message_ids[0] * channel_id
+            link_string = f"get-{converted}"
+        else:
+            converted_ids = [str(msg_id * channel_id) for msg_id in message_ids]
+            link_string = f"custombatch-{'-'.join(converted_ids)}"
+        
+        encoded = await encode(link_string)
+        
+        # Store custom message
+        if hasattr(client, "db") and client.db:
+            await client.db.settings.update_one(
+                {"_id": f"special_{encoded}"},
+                {"$set": {"message": custom_text}},
+                upsert=True
+            )
+        
+        link = f"https://t.me/{client.username}?start={encoded}"
+        
+        # Create reply
+        reply_text = f"""
+✅ <b>Special Link Generated!</b>
+
+<b>📊 Total Files:</b> <code>{len(message_ids)}</code>
+
+<b>💬 Custom Message:</b>
+{custom_text}
+
+<b>🔗 Special Link:</b>
+<code>{link}</code>
+
+<b>🌟 When users click this link, they'll see your custom message first, then get the files!</b>
+"""
+        
+        buttons = InlineKeyboardMarkup([
+            [InlineKeyboardButton("📋 Copy Link", url=link)]
+        ])
+        
+        await message.reply_text(
+            reply_text,
+            quote=True,
+            reply_markup=buttons,
+            disable_web_page_preview=True
+        )
+    
+    except Exception as e:
+        await message.reply_text(
+            f"❌ <b>Error!</b>\n\n<code>{str(e)}</code>",
+            quote=True
+        )
+
+
+# Add handler to show custom message when special link is clicked
+async def handle_special_link(client: Client, message: Message, file_param: str):
+    """Show custom message for special links"""
+    
+    # Check if special link exists
+    if hasattr(client, "db") and client.db:
+        special_data = await client.db.settings.find_one({"_id": f"special_{file_param}"})
+        
+        if special_data and 'message' in special_data:
+            # Show custom message first
+            await message.reply_text(
+                special_data['message'],
+                quote=True
+            )
+    
+    # Continue with normal file sending
+    # (This is called from start.py's file handling)
+
+"""
+============================================================================
+Shortener Command - Shorten Any Shareable Links
+Uses URL shortener API (moderators only)
+============================================================================
+"""
+
+# Popular URL shortener APIs (choose one or add your own)
+SHORTENER_API = "https://ulvis.net/api.php"  # Free, no API key needed
+
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("shortener"))
+async def shortener_command(client: Client, message: Message):
+    """Shorten any URL"""
+    
+    # Check if URL provided
+    if len(message.command) < 2:
+        await message.reply_text(
+            "🔗 <b>URL SHORTENER</b>\n\n"
+            "<b>Usage:</b> <code>/shortener [URL]</code>\n\n"
+            "<b>Example:</b>\n"
+            "<code>/shortener https://t.me/YourBot?start=ABC123XYZ</code>\n\n"
+            "Or reply to a message containing a URL with /shortener",
+            quote=True
+        )
+        return
+    
+    # Get URL
+    if len(message.command) >= 2:
+        url = message.command[1]
+    elif message.reply_to_message and message.reply_to_message.text:
+        url = message.reply_to_message.text.strip()
+    else:
+        await message.reply_text("❌ Please provide a URL!", quote=True)
+        return
+    
+    # Validate URL
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url
+    
+    # Show loading
+    status_msg = await message.reply_text("⏳ <b>Shortening URL...</b>", quote=True)
+    
+    # Shorten URL
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{SHORTENER_API}?url={url}") as response:
+                if response.status == 200:
+                    short_url = await response.text()
+                    short_url = short_url.strip()
+                    
+                    # Create reply
+                    reply_text = f"""
+✅ <b>URL Shortened Successfully!</b>
+
+<b>🔗 Original URL:</b>
+<code>{url}</code>
+
+<b>✂️ Short URL:</b>
+<code>{short_url}</code>
+
+<b>💡 Share the short URL with users!</b>
+"""
+                    
+                    await status_msg.edit_text(reply_text)
+                else:
+                    await status_msg.edit_text(
+                        f"❌ <b>Error!</b> Status: {response.status}\n\n"
+                        "Try another URL shortener or check your link."
+                    )
+    
+    except Exception as e:
+        await status_msg.edit_text(
+            f"❌ <b>Error Shortening URL!</b>\n\n<code>{str(e)}</code>\n\n"
+            "Try again or use a different URL shortener."
+        )
+
+
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("shortener_settings"))
+async def shortener_settings(client: Client, message: Message):
+    """Configure URL shortener"""
+    
+    await message.reply_text(
+        "⚙️ <b>SHORTENER SETTINGS</b>\n\n"
+        "<b>Current Shortener:</b> ulvis.net\n\n"
+        "<b>Available Shorteners:</b>\n"
+        "• ulvis.net (current)\n"
+        "• tinyurl.com\n"
+        "• is.gd\n"
+        "• v.gd\n\n"
+        "<b>To change:</b> Edit <code>plugins/shortener.py</code>\n"
+        "Update SHORTENER_API variable\n\n"
+        "<b>Custom API:</b> You can add your own API like:\n"
+        "• bit.ly (needs API key)\n"
+        "• short.io (needs API key)\n"
+        "• rebrandly.com (needs API key)",
+        quote=True
+    )
+
+
+"""
+============================================================================
+Settings Command - Beautiful Interactive UI with Toggles
+EXACTLY like EvaMaria screenshots - /forcesub, /files, /auto_del, /req_fsub
+============================================================================
+"""
+
+# ========== MAIN SETTINGS COMMAND ==========
+
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("settings"))
+async def settings_command(client: Client, message: Message):
+    """Main settings menu"""
+    
+    text = """
+⚙️ <b>SETTINGS PANEL</b>
+
+<b>Configure your bot settings below:</b>
+
+🔒 <b>Protection Settings</b>
+📁 <b>File Settings</b>
+🗑️ <b>Auto Delete Settings</b>
+📢 <b>Force Subscribe Settings</b>
+
+<i>Click a button to configure</i>
+"""
+    
+    buttons = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🔒 Protection", callback_data="setting_protection"),
+            InlineKeyboardButton("📁 Files", callback_data="setting_files")
+        ],
+        [
+            InlineKeyboardButton("🗑️ Auto Delete", callback_data="setting_auto_delete"),
+            InlineKeyboardButton("📢 Force Sub", callback_data="setting_force_sub")
+        ],
+        [
+            InlineKeyboardButton("⚙️ Request FSub", callback_data="setting_req_fsub")
+        ],
+        [
+            InlineKeyboardButton("🔒 Close", callback_data="close")
+        ]
+    ])
+    
+    await message.reply_text(text, reply_markup=buttons, quote=True)
+
+
+# ========== FORCE SUBSCRIBE SETTINGS (/forcesub command) ==========
+
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("forcesub"))
+async def forcesub_command(client: Client, message: Message):
+    """Force subscribe settings - Detailed Channel Management"""
+    
+    from config import FORCE_SUB_CHANNELS
+    
+    # Get current status
+    is_enabled = len(FORCE_SUB_CHANNELS) > 0 and FORCE_SUB_CHANNELS[0] != 0
+    status_icon = "✅" if is_enabled else "❌"
+    status_text = "ENABLED" if is_enabled else "DISABLED"
+    
+    text = f"""
+👥 <b>FORCE SUB COMMANDS</b>
+
+<b>Current Status:</b> {status_icon} <b>{status_text}</b>
+
+<b>Available Commands:</b>
+
+<b>/fsub_chnl</b> - Check current force-sub channels (Admins)
+
+<b>/add_fsub</b> - Add one or multiple force sub channels (Owner)
+
+<b>/del_fsub</b> - Delete one or multiple force sub channels (Owner)
+"""
+    
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔒 Close", callback_data="close")]
+    ])
+    
+    await message.reply_text(text, reply_markup=buttons, quote=True)
+
+
+@Client.on_callback_query(filters.regex("^setting_force_sub$"))
+async def force_sub_callback(client: Client, query: CallbackQuery):
+    """Force subscribe settings panel with back button"""
+    
+    from config import FORCE_SUB_CHANNELS
+    
+    is_enabled = len(FORCE_SUB_CHANNELS) > 0 and FORCE_SUB_CHANNELS[0] != 0
+    status_icon = "✅" if is_enabled else "❌"
+    
+    text = f"""
+📢 <b>FORCE SUBSCRIBE SETTINGS</b>
+
+<b>Status:</b> {status_icon} <b>{'ENABLED' if is_enabled else 'DISABLED'}</b>
+
+<b>Description:</b>
+Force users to join your channel(s) before accessing files.
+
+<b>Commands:</b>
+• <code>/forcesub</code> - View commands
+• <code>/fsub_chnl</code> - Check channels
+• <code>/add_fsub</code> - Add channel
+• <code>/del_fsub</code> - Remove channel
+"""
+    
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔙 Back", callback_data="settings_main")],
+        [InlineKeyboardButton("🔒 Close", callback_data="close")]
+    ])
+    
+    await query.message.edit_text(text, reply_markup=buttons)
+
+
+# ========== REQUEST FORCE SUBSCRIBE (/req_fsub command) ==========
+
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("req_fsub"))
+async def req_fsub_command(client: Client, message: Message):
+    """Request force subscribe settings - Handle Join Requests"""
+    
+    # Get current status from database
+    if hasattr(client, "db") and client.db:
+        req_fsub_enabled = await client.db.get_setting("request_fsub")
+    else:
+        req_fsub_enabled = REQUEST_FSUB
+    
+    status_icon = "✅" if req_fsub_enabled else "❌"
+    on_btn = "🟢 ON" if req_fsub_enabled else "ON"
+    off_btn = "OFF" if req_fsub_enabled else "🔴 OFF"
+    
+    text = f"""
+👥 <b>REQUEST FSUB SETTINGS</b>
+
+🔔 <b>REQUEST FSUB MODE:</b> {status_icon}
+
+<b>CLICK BELOW BUTTONS TO CHANGE SETTINGS</b>
+"""
+    
+    buttons = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(on_btn, callback_data="req_fsub_on"),
+            InlineKeyboardButton(off_btn, callback_data="req_fsub_off")
+        ],
+        [
+            InlineKeyboardButton("⚙️ MORE SETTINGS ⚙️", callback_data="req_fsub_more")
+        ],
+        [
+            InlineKeyboardButton("🔒 Close", callback_data="close")
+        ]
+    ])
+    
+    await message.reply_text(text, reply_markup=buttons, quote=True)
+
+
+@Client.on_callback_query(filters.regex("^req_fsub_(on|off)$"))
+async def req_fsub_toggle(client: Client, query: CallbackQuery):
+    """Interactive toggle for request force subscribe"""
+    
+    if query.from_user.id not in ADMINS:
+        await query.answer("❌ You're not authorized!", show_alert=True)
+        return
+    
+    action = query.data.split("_")[2]
+    new_value = True if action == "on" else False
+    
+    # Update in database
+    if hasattr(client, "db") and client.db:
+        await client.db.update_setting("request_fsub", new_value)
+    
+    # Update config
+    import config
+    config.REQUEST_FSUB = new_value
+    
+    await query.answer(f"✅ Request FSub {'Enabled' if new_value else 'Disabled'}!")
+    
+    # Refresh display with updated status
+    status_icon = "✅" if new_value else "❌"
+    on_btn = "🟢 ON" if new_value else "ON"
+    off_btn = "OFF" if new_value else "🔴 OFF"
+    
+    text = f"""
+👥 <b>REQUEST FSUB SETTINGS</b>
+
+🔔 <b>REQUEST FSUB MODE:</b> {status_icon}
+
+<b>CLICK BELOW BUTTONS TO CHANGE SETTINGS</b>
+"""
+    
+    buttons = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(on_btn, callback_data="req_fsub_on"),
+            InlineKeyboardButton(off_btn, callback_data="req_fsub_off")
+        ],
+        [
+            InlineKeyboardButton("⚙️ MORE SETTINGS ⚙️", callback_data="req_fsub_more")
+        ],
+        [
+            InlineKeyboardButton("🔒 Close", callback_data="close")
+        ]
+    ])
+    
+    await query.message.edit_text(text, reply_markup=buttons)
+
+
+# ========== FILES SETTINGS (/files command) ==========
+
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("files"))
+async def files_command(client: Client, message: Message):
+    """File settings panel for protection and captions"""
+    
+    # Get current settings
+    if hasattr(client, "db") and client.db:
+        protect = await client.db.get_setting("protect_content")
+        hide_caption = await client.db.get_setting("hide_caption")
+        channel_btn = await client.db.get_setting("channel_button")
+    else:
+        # Fallback to config
+        from config import PROTECT_CONTENT, HIDE_CAPTION
+        protect = PROTECT_CONTENT
+        hide_caption = HIDE_CAPTION
+        channel_btn = True
+        
+    protect_icon = "❌" if protect else "✅"
+    hide_icon = "❌" if hide_caption else "✅"
+    channel_icon = "✅" if channel_btn else "❌"
+    
+    text = f"""
+📁 <b>FILES RELATED SETTINGS</b>
+
+🔒 <b>PROTECT CONTENT:</b> {'DISABLED' if not protect else 'ENABLED'} {protect_icon}
+
+🎭 <b>HIDE CAPTION:</b> {'DISABLED' if not hide_caption else 'ENABLED'} {hide_icon}
+
+📢 <b>CHANNEL BUTTON:</b> {'ENABLED' if channel_btn else 'DISABLED'} {channel_icon}
+
+<b>CLICK BELOW BUTTONS TO CHANGE SETTINGS</b>
+"""
+    
+    buttons = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(f"PROTECT CONTENT: {'❌' if protect else '✅'}", callback_data=f"file_protect_{'off' if protect else 'on'}")
+        ],
+        [
+            InlineKeyboardButton(f"HIDE CAPTION: {'❌' if hide_caption else '✅'}", callback_data=f"file_caption_{'off' if hide_caption else 'on'}")
+        ],
+        [
+            InlineKeyboardButton(f"CHANNEL BUTTON: {'✅' if channel_btn else '❌'}", callback_data=f"file_channel_{'off' if channel_btn else 'on'}")
+        ],
+        [
+            InlineKeyboardButton("◈ SET BUTTON ◈", callback_data="file_set_button")
+        ],
+        [
+            InlineKeyboardButton("🔄 REFRESH", callback_data="files_refresh"),
+            InlineKeyboardButton("🔒 CLOSE", callback_data="close")
+        ]
+    ])
+    
+    await message.reply_text(text, reply_markup=buttons, quote=True)
+
+
+# ========== AUTO DELETE SETTINGS (/auto_del command) ==========
+
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("auto_del"))
+async def auto_del_command(client: Client, message: Message):
+    """Auto delete configuration and timer settings"""
+    
+    from config import AUTO_DELETE_TIME
+    
+    # Get current settings
+    if hasattr(client, "db") and client.db:
+        auto_del_enabled = await client.db.get_setting("auto_delete")
+        del_time = await client.db.get_setting("auto_delete_time") or AUTO_DELETE_TIME
+    else:
+        auto_del_enabled = AUTO_DELETE_TIME > 0
+        del_time = AUTO_DELETE_TIME
+        
+    status_icon = "✅" if auto_del_enabled else "❌"
+    minutes = del_time // 60 if del_time else 5
+    
+    text = f"""
+🗑️ <b>AUTO DELETE SETTINGS</b>
+
+🔔 <b>AUTO DELETE MODE:</b> {'ENABLED' if auto_del_enabled else 'DISABLED'} {status_icon}
+
+⏱️ <b>DELETE TIMER:</b> {minutes} MINUTES
+
+<b>CLICK BELOW BUTTONS TO CHANGE SETTINGS</b>
+"""
+    
+    buttons = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("DISABLE MODE ❌" if auto_del_enabled else "ENABLE MODE ✅", 
+                                 callback_data="auto_del_toggle")
+        ],
+        [
+            InlineKeyboardButton("◈ SET TIMER ⏱️", callback_data="auto_del_set_timer")
+        ],
+        [
+            InlineKeyboardButton("🔄 REFRESH", callback_data="auto_del_refresh"),
+            InlineKeyboardButton("🔒 CLOSE", callback_data="close")
+        ]
+    ])
+    
+    await message.reply_text(text, reply_markup=buttons, quote=True)
+
+"""
+============================================================================
+Admin Database Commands - User Management & Broadcasting
+Complete control over your bot's users
+============================================================================
+"""
+
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("broadcast"))
+async def broadcast_handler(client: Client, message: Message):
+    """High-speed broadcast to all users"""
+    
+    if not message.reply_to_message:
+        await message.reply_text(
+            "📢 <b>BROADCAST</b>\n\n"
+            "Reply to a message with <code>/broadcast</code> to send it to all users.",
+            quote=True
+        )
+        return
+    
+    if not hasattr(client, "db") or not client.db:
+        await message.reply_text("❌ Database not connected!", quote=True)
+        return
+
+    users = await client.db.get_all_users()
+    total_users = await client.db.total_users_count()
+    
+    status_msg = await message.reply_text(
+        f"🚀 <b>Broadcast Started!</b>\n\n"
+        f"<b>Total Users:</b> <code>{total_users}</code>\n"
+        f"<b>Progress:</b> <code>0%</code>",
+        quote=True
+    )
+    
+    done = 0
+    failed = 0
+    success = 0
+    start_time = asyncio.get_event_loop().time()
+    
+    async for user in users:
+        user_id = user["id"]
+        try:
+            await message.reply_to_message.copy(chat_id=user_id)
+            success += 1
+        except FloodWait as e:
+            await asyncio.sleep(e.value)
+            await message.reply_to_message.copy(chat_id=user_id)
+            success += 1
+        except (UserIsBlocked, InputUserDeactivated):
+            await client.db.delete_user(user_id)
+            failed += 1
+        except Exception:
+            failed += 1
+        
+        done += 1
+        
+        # Update progress every 20 users
+        if done % 20 == 0:
+            percentage = (done / total_users) * 100
+            try:
+                await status_msg.edit_text(
+                    f"🚀 <b>Broadcast in Progress...</b>\n\n"
+                    f"<b>Total:</b> <code>{total_users}</code>\n"
+                    f"<b>Success:</b> <code>{success}</code>\n"
+                    f"<b>Failed:</b> <code>{failed}</code>\n"
+                    f"<b>Progress:</b> <code>{percentage:.1f}%</code>"
+                )
+            except:
+                pass
+    
+    end_time = asyncio.get_event_loop().time()
+    time_taken = end_time - start_time
+    
+    final_text = f"""
+✅ <b>Broadcast Completed!</b>
+
+📊 <b>Statistics:</b>
+• <b>Total Users:</b> <code>{total_users}</code>
+• <b>Success:</b> <code>{success}</code>
+• <b>Failed:</b> <code>{failed}</code>
+• <b>Time Taken:</b> <code>{time_taken:.2f}s</code>
+
+<i>Inactive users were removed from database.</i>
+"""
+    await status_msg.edit_text(final_text)
+
+
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("ban_user"))
+async def ban_user_handler(client: Client, message: Message):
+    """Ban a user from using the bot"""
+    
+    if len(message.command) < 2:
+        await message.reply_text("❌ <b>Usage:</b> <code>/ban_user [User ID] [Reason]</code>", quote=True)
+        return
+    
+    user_id = int(message.command[1])
+    reason = " ".join(message.command[2:]) if len(message.command) > 2 else "No reason provided."
+    
+    if user_id in ADMINS:
+        await message.reply_text("❌ You cannot ban an Admin!", quote=True)
+        return
+    
+    if hasattr(client, "db") and client.db:
+        await client.db.ban_user(user_id, reason)
+        await message.reply_text(f"✅ <b>User {user_id} has been banned.</b>\nReason: {reason}", quote=True)
+        
+        # Notify the user
+        try:
+            await client.send_message(
+                user_id,
+                f"🚫 <b>You have been banned from using this bot!</b>\n\n"
+                f"<b>Reason:</b> {reason}\n"
+                f"Contact support if you think this is a mistake."
+            )
+        except:
+            pass
+    else:
+        await message.reply_text("❌ Database not connected!", quote=True)
+
+
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("unban_user"))
+async def unban_user_handler(client: Client, message: Message):
+    """Unban a user"""
+    
+    if len(message.command) < 2:
+        await message.reply_text("❌ <b>Usage:</b> <code>/unban_user [User ID]</code>", quote=True)
+        return
+    
+    user_id = int(message.command[1])
+    
+    if hasattr(client, "db") and client.db:
+        await client.db.unban_user(user_id)
+        await message.reply_text(f"✅ <b>User {user_id} has been unbanned.</b>", quote=True)
+        
+        try:
+            await client.send_message(user_id, "😇 <b>Congratulations! You have been unbanned.</b>")
+        except:
+            pass
+    else:
+        await message.reply_text("❌ Database not connected!", quote=True)
+
+
+"""
+============================================================================
+Stats & System Monitoring
+Real-time bot health and user data
+============================================================================
+"""
+
+@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("stats"))
+async def stats_handler(client: Client, message: Message):
+    """View bot statistics"""
+    
+    if not hasattr(client, "db") or not client.db:
+        await message.reply_text("❌ Database not connected!", quote=True)
+        return
+    
+    total_users = await client.db.total_users_count()
+    banned_users = len(await client.db.get_banned_users())
+    
+    text = f"""
+📊 <b>BOT STATISTICS</b>
+
+<b>🤖 Bot Info:</b>
+• Name: {client.first_name}
+• Username: @{client.username}
+• ID: <code>{client.id}</code>
+
+<b>👥 Users:</b>
+• Total: <code>{total_users}</code>
+• Banned: <code>{banned_users}</code>
+• Active: <code>{total_users - banned_users}</code>
+
+<b>⚙️ System:</b>
+• Database: ✅ Connected
+• Channels: ✅ Configured
+"""
+    
+    if hasattr(client, "db_channel") and client.db_channel:
+        text += f"• File Channel: {client.db_channel.title}\n"
+    
+    text += f"\n<i>Last updated: Just now</i>"
+    
+    buttons = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🔄 Refresh", callback_data="stats_refresh"),
+            InlineKeyboardButton("🔒 Close", callback_data="close")
+        ]
+    ])
+    
+    await message.reply_text(text, reply_markup=buttons, quote=True)
+
+
+@Client.on_callback_query(filters.regex("^stats_refresh$"))
+async def stats_refresh_callback(client: Client, query: CallbackQuery):
+    """Update stats UI on refresh click"""
+    
+    total_users = await client.db.total_users_count()
+    banned_users = len(await client.db.get_banned_users())
+    
+    text = f"""
+📊 <b>BOT STATISTICS</b>
+
+<b>🤖 Bot Info:</b>
+• Name: {client.first_name}
+• Username: @{client.username}
+• ID: <code>{client.id}</code>
+
+<b>👥 Users:</b>
+• Total: <code>{total_users}</code>
+• Banned: <code>{banned_users}</code>
+• Active: <code>{total_users - banned_users}</code>
+
+<b>⚙️ System:</b>
+• Database: ✅ Connected
+• Channels: ✅ Configured
+"""
+    
+    if hasattr(client, "db_channel") and client.db_channel:
+        text += f"• File Channel: {client.db_channel.title}\n"
+    
+    text += f"\n<i>Last updated: Just now</i>"
+    
+    buttons = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🔄 Refresh", callback_data="stats_refresh"),
+            InlineKeyboardButton("🔒 Close", callback_data="close")
+        ]
+    ])
+    
+    await query.message.edit_text(text, reply_markup=buttons)
+
+
+"""
+============================================================================
+Final Initialization Logic
+Run the bot instance
+============================================================================
+"""
 
 async def main():
+    """Main function to run the bot"""
     import config
     
-    # 1. Initialize Bot
+    # Create bot instance
     bot = Bot()
     
-    # 2. Configure Channel (Initial check)
+    # Configure database channel from config
     if config.CHANNELS and config.CHANNELS[0] != 0:
         try:
-            bot.db_channel = await bot.get_chat(config.CHANNELS[0])
-            bot.db_channel_id = bot.db_channel.id
-        except: pass
-
-    # 3. Start Web Server (CRITICAL FOR RENDER)
-    await start_web_server()
-
-    # 4. Start Bot & Idle
-    await bot.start()
+            # We must be started to fetch chat info
+            await bot.start()
+            channel = await bot.get_chat(config.CHANNELS[0])
+            bot.db_channel = channel
+            bot.db_channel_id = channel.id
+            LOGGER.info(f"✅ DB Channel Set: {channel.title}")
+        except Exception as e:
+            LOGGER.error(f"❌ Failed to fetch DB Channel: {e}")
+    
+    # Keep bot running
     await idle()
     await bot.stop()
 
 if __name__ == "__main__":
-    try:
-        asyncio.get_event_loop().run_until_complete(main())
-    except KeyboardInterrupt:
-        print("👋 Bye!")
+    asyncio.get_event_loop().run_until_complete(main())
