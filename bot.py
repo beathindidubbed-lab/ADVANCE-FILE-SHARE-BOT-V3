@@ -3613,15 +3613,18 @@ async def main():
     # Start bot
     await bot.start()
     
-    # Keep running
-    await idle()
+    LOGGER.info("🤖 Bot is now running. Press Ctrl+C to stop.")
     
-    # Cleanup
-    await bot.stop()
-    await web_runner.cleanup()
+    # Keep running forever
+    try:
+        await idle()
+    except (KeyboardInterrupt, SystemExit):
+        LOGGER.info("⏹️ Stopping bot...")
+    finally:
+        # Cleanup
+        await bot.stop()
+        await web_runner.cleanup()
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("👋 Bye!")
+    import asyncio
+    asyncio.run(main())
