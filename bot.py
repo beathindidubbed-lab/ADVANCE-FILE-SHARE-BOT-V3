@@ -1160,10 +1160,15 @@ Complete control over your bot's users
 ============================================================================
 """
 
-@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("broadcast"))
+@Client.on_message(filters.private & filters.command("broadcast"))
 async def broadcast_handler(client: Client, message: Message):
     """High-speed broadcast to all users"""
+    from config import ADMINS
     
+    # Auth Check
+    if message.from_user.id not in ADMINS:
+        return
+
     if not message.reply_to_message:
         await message.reply_text(
             "📢 <b>BROADCAST</b>\n\n"
@@ -1208,7 +1213,6 @@ async def broadcast_handler(client: Client, message: Message):
         
         done += 1
         
-        # Update progress every 20 users
         if done % 20 == 0:
             percentage = (done / total_users) * 100
             try:
@@ -1222,10 +1226,9 @@ async def broadcast_handler(client: Client, message: Message):
             except:
                 pass
     
-    end_time = asyncio.get_event_loop().time()
-    time_taken = end_time - start_time
+    time_taken = asyncio.get_event_loop().time() - start_time
     
-    final_text = f"""
+    await status_msg.edit_text(f"""
 ✅ <b>Broadcast Completed!</b>
 
 📊 <b>Statistics:</b>
@@ -1235,19 +1238,25 @@ async def broadcast_handler(client: Client, message: Message):
 • <b>Time Taken:</b> <code>{time_taken:.2f}s</code>
 
 <i>Inactive users were removed from database.</i>
-"""
-    await status_msg.edit_text(final_text)
+""")
 
 
-@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("ban_user"))
+@Client.on_message(filters.private & filters.command("ban_user"))
 async def ban_user_handler(client: Client, message: Message):
     """Ban a user from using the bot"""
+    from config import ADMINS
+    if message.from_user.id not in ADMINS:
+        return
     
     if len(message.command) < 2:
         await message.reply_text("❌ <b>Usage:</b> <code>/ban_user [User ID] [Reason]</code>", quote=True)
         return
     
-    user_id = int(message.command[1])
+    try:
+        user_id = int(message.command[1])
+    except ValueError:
+        return await message.reply_text("❌ Invalid User ID.")
+        
     reason = " ".join(message.command[2:]) if len(message.command) > 2 else "No reason provided."
     
     if user_id in ADMINS:
@@ -1258,13 +1267,11 @@ async def ban_user_handler(client: Client, message: Message):
         await client.db.ban_user(user_id, reason)
         await message.reply_text(f"✅ <b>User {user_id} has been banned.</b>\nReason: {reason}", quote=True)
         
-        # Notify the user
         try:
             await client.send_message(
                 user_id,
                 f"🚫 <b>You have been banned from using this bot!</b>\n\n"
-                f"<b>Reason:</b> {reason}\n"
-                f"Contact support if you think this is a mistake."
+                f"<b>Reason:</b> {reason}"
             )
         except:
             pass
@@ -1272,38 +1279,43 @@ async def ban_user_handler(client: Client, message: Message):
         await message.reply_text("❌ Database not connected!", quote=True)
 
 
-@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("unban_user"))
+@Client.on_message(filters.private & filters.command("unban_user"))
 async def unban_user_handler(client: Client, message: Message):
     """Unban a user"""
+    from config import ADMINS
+    if message.from_user.id not in ADMINS:
+        return
     
     if len(message.command) < 2:
         await message.reply_text("❌ <b>Usage:</b> <code>/unban_user [User ID]</code>", quote=True)
         return
     
-    user_id = int(message.command[1])
+    try:
+        user_id = int(message.command[1])
+    except ValueError:
+        return await message.reply_text("❌ Invalid User ID.")
     
     if hasattr(client, "db") and client.db:
         await client.db.unban_user(user_id)
         await message.reply_text(f"✅ <b>User {user_id} has been unbanned.</b>", quote=True)
-        
         try:
             await client.send_message(user_id, "😇 <b>Congratulations! You have been unbanned.</b>")
         except:
             pass
-    else:
-        await message.reply_text("❌ Database not connected!", quote=True)
 
 
 """
 ============================================================================
 Stats & System Monitoring
-Real-time bot health and user data
 ============================================================================
 """
 
-@Client.on_message(filters.private & filters.user(ADMINS) & filters.command("stats"))
+@Client.on_message(filters.private & filters.command("stats"))
 async def stats_handler(client: Client, message: Message):
     """View bot statistics"""
+    from config import ADMINS
+    if message.from_user.id not in ADMINS:
+        return
     
     if not hasattr(client, "db") or not client.db:
         await message.reply_text("❌ Database not connected!", quote=True)
@@ -1317,7 +1329,6 @@ async def stats_handler(client: Client, message: Message):
 
 <b>🤖 Bot Info:</b>
 • Name: {client.first_name}
-• Username: @{client.username}
 • ID: <code>{client.id}</code>
 
 <b>👥 Users:</b>
@@ -1327,91 +1338,46 @@ async def stats_handler(client: Client, message: Message):
 
 <b>⚙️ System:</b>
 • Database: ✅ Connected
-• Channels: ✅ Configured
 """
     
-    if hasattr(client, "db_channel") and client.db_channel:
-        text += f"• File Channel: {client.db_channel.title}\n"
-    
-    text += f"\n<i>Last updated: Just now</i>"
-    
-    buttons = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("🔄 Refresh", callback_data="stats_refresh"),
-            InlineKeyboardButton("🔒 Close", callback_data="close")
-        ]
-    ])
+    buttons = InlineKeyboardMarkup([[
+        InlineKeyboardButton("🔄 Refresh", callback_data="stats_refresh"),
+        InlineKeyboardButton("🔒 Close", callback_data="close")
+    ]])
     
     await message.reply_text(text, reply_markup=buttons, quote=True)
 
-
-@Client.on_callback_query(filters.regex("^stats_refresh$"))
-async def stats_refresh_callback(client: Client, query: CallbackQuery):
-    """Update stats UI on refresh click"""
-    
-    total_users = await client.db.total_users_count()
-    banned_users = len(await client.db.get_banned_users())
-    
-    text = f"""
-📊 <b>BOT STATISTICS</b>
-
-<b>🤖 Bot Info:</b>
-• Name: {client.first_name}
-• Username: @{client.username}
-• ID: <code>{client.id}</code>
-
-<b>👥 Users:</b>
-• Total: <code>{total_users}</code>
-• Banned: <code>{banned_users}</code>
-• Active: <code>{total_users - banned_users}</code>
-
-<b>⚙️ System:</b>
-• Database: ✅ Connected
-• Channels: ✅ Configured
-"""
-    
-    if hasattr(client, "db_channel") and client.db_channel:
-        text += f"• File Channel: {client.db_channel.title}\n"
-    
-    text += f"\n<i>Last updated: Just now</i>"
-    
-    buttons = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("🔄 Refresh", callback_data="stats_refresh"),
-            InlineKeyboardButton("🔒 Close", callback_data="close")
-        ]
-    ])
-    
-    await query.message.edit_text(text, reply_markup=buttons)
-
-
-"""
-============================================================================
-Final Initialization Logic
-Run the bot instance
-============================================================================
-"""
+# Web Server for Render Health Checks
+async def start_web_server():
+    async def handle(request):
+        return web.Response(text="Bot is running!")
+    app = web.Application()
+    app.router.add_get("/", handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", 8080))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
 
 async def main():
     """Main function to run the bot"""
     import config
     
-    # Create bot instance
-    bot = Bot()
+    # Start web server first for Render
+    await start_web_server()
     
-    # Configure database channel from config
+    bot = Bot()
+    await bot.start()
+    
+    # Configure DB Channel
     if config.CHANNELS and config.CHANNELS[0] != 0:
         try:
-            # We must be started to fetch chat info
-            await bot.start()
             channel = await bot.get_chat(config.CHANNELS[0])
             bot.db_channel = channel
-            bot.db_channel_id = channel.id
             LOGGER.info(f"✅ DB Channel Set: {channel.title}")
         except Exception as e:
-            LOGGER.error(f"❌ Failed to fetch DB Channel: {e}")
+            LOGGER.error(f"❌ Channel Error: {e}")
     
-    # Keep bot running
     await idle()
     await bot.stop()
 
