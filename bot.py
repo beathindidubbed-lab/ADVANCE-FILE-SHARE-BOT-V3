@@ -3591,40 +3591,6 @@ async def start_web_server():
     LOGGER.info(f"✅ Web server started on port {port}")
     return runner
 
-async def main():
-    """Main function to run the bot"""
-    import config
-    
-    # Create bot instance
-    bot = Bot()
-    
-    # Configure database channel
-    if config.CHANNELS and config.CHANNELS[0] != 0:
-        try:
-            channel = await bot.get_chat(config.CHANNELS[0])
-            bot.db_channel = channel
-            bot.db_channel_id = channel.id
-        except:
-            pass
-    
-    # Start web server FIRST (for Render)
-    web_runner = await start_web_server()
-    
-    # Start bot
-    await bot.start()
-    
-    LOGGER.info("🤖 Bot is now running. Press Ctrl+C to stop.")
-    
-    # Keep running forever
-    try:
-        await idle()
-    except (KeyboardInterrupt, SystemExit):
-        LOGGER.info("⏹️ Stopping bot...")
-    finally:
-        # Cleanup
-        await bot.stop()
-        await web_runner.cleanup()
-
 if __name__ == "__main__":
     import asyncio
     asyncio.run(main())
