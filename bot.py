@@ -631,10 +631,6 @@ async def log_callbacks(client: Client, query: CallbackQuery):
     """Logs all callback queries"""
     print(f"🔘 CALLBACK: {query.data} from {query.from_user.id}")
 
-@Client.on_inline_query()
-async def log_inline(client: Client, query: InlineQuery):
-    """Logs all inline queries"""
-    print(f"🔍 INLINE QUERY: {query.query} from {query.from_user.id}")
 
 
 """
@@ -3547,6 +3543,27 @@ async def stats_refresh_callback(client: Client, query: CallbackQuery):
     ])
     
     await query.message.edit_text(text, reply_markup=buttons)
+
+async def main():
+    """Main function to run the bot"""
+    import config
+    
+    # Create bot instance
+    bot = Bot()
+    
+    # Configure database channel
+    if config.CHANNELS and config.CHANNELS[0] != 0:
+        try:
+            channel = await bot.get_chat(config.CHANNELS[0])
+            bot.db_channel = channel
+            bot.db_channel_id = channel.id
+        except:
+            pass
+    
+    # Start bot
+    await bot.start()
+    await idle()
+    await bot.stop()
 
 if __name__ == "__main__":
     try:
