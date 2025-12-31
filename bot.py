@@ -6,6 +6,9 @@ FIXED FOR RENDER: Runs web server + bot together
 import sys
 import logging
 import asyncio
+import os
+import glob
+import importlib
 from aiohttp import web
 from pyrogram import Client, filters, idle
 from pyrogram.enums import ParseMode
@@ -64,90 +67,49 @@ class Bot(Client):
             LOGGER.warning(f"⚠️ Database: {e}")
             self.db = None
         
-        # Register handlers
-        self.register_handlers()
-        
         LOGGER.info("")
         LOGGER.info("=" * 70)
-        LOGGER.info("🎉 BOT IS READY AND WILL RESPOND!")
+        LOGGER.info("🎉 BOT IS READY!")
         LOGGER.info(f"   Bot: @{self.username}")
         LOGGER.info(f"   ID: {self.id}")
+        LOGGER.info("   All plugins loaded!")
         LOGGER.info("=" * 70)
         LOGGER.info("")
-    
-    def register_handlers(self):
-        """Register all handlers"""
-        
-        LOGGER.info("📝 Registering handlers...")
-        
-        # /start command
-        @self.on_message(filters.command("start") & filters.private)
-        async def start_handler(client, message: Message):
-            LOGGER.info(f"📨 /start from {message.from_user.id}")
-            await message.reply_text(
-                f"✅ <b>BOT IS WORKING!</b>\n\n"
-                f"👋 Hello {message.from_user.first_name}!\n\n"
-                f"<b>Bot:</b> @{client.username}\n"
-                f"<b>Your ID:</b> <code>{message.from_user.id}</code>\n\n"
-                f"🟢 I'm online and responding!\n\n"
-                f"<b>Try these commands:</b>\n"
-                f"• /test - Test bot\n"
-                f"• /ping - Check status\n"
-                f"• /help - Get help",
-                quote=True
-            )
-        
-        # /test command
-        @self.on_message(filters.command("test") & filters.private)
-        async def test_handler(client, message: Message):
-            LOGGER.info(f"📨 /test from {message.from_user.id}")
-            await message.reply_text(
-                f"✅ <b>TEST SUCCESSFUL!</b>\n\n"
-                f"<b>User:</b> {message.from_user.first_name}\n"
-                f"<b>ID:</b> <code>{message.from_user.id}</code>\n"
-                f"<b>Bot:</b> @{client.username}\n\n"
-                f"🎉 Everything is working perfectly!",
-                quote=True
-            )
-        
-        # /ping command
-        @self.on_message(filters.command("ping") & filters.private)
-        async def ping_handler(client, message: Message):
-            LOGGER.info(f"📨 /ping from {message.from_user.id}")
-            await message.reply_text("🏓 <b>PONG!</b>\n\nBot is alive!", quote=True)
-        
-        # /help command
-        @self.on_message(filters.command("help") & filters.private)
-        async def help_handler(client, message: Message):
-            await message.reply_text(
-                f"📚 <b>HELP MENU</b>\n\n"
-                f"<b>Available Commands:</b>\n"
-                f"• /start - Start bot\n"
-                f"• /test - Test functionality\n"
-                f"• /ping - Check if online\n"
-                f"• /help - This menu\n\n"
-                f"<b>Bot Status:</b> 🟢 Online",
-                quote=True
-            )
-        
-        # Catch other text
-        @self.on_message(filters.private & filters.text)
-        async def text_handler(client, message: Message):
-            LOGGER.info(f"📨 Text from {message.from_user.id}: {message.text}")
-            
-            text = message.text.lower()
-            if text in ['hi', 'hello', 'hey', 'test']:
-                await message.reply_text(
-                    f"👋 Hey {message.from_user.first_name}!\n\n"
-                    f"I'm working! Try /start",
-                    quote=True
-                )
-        
-        LOGGER.info("✅ Handlers registered! Bot will respond now!")
 
     async def stop(self, *args):
         await super().stop()
         LOGGER.info("❌ Bot Stopped")
+
+
+def load_plugins():
+    """Load all plugins from plugins folder"""
+    LOGGER.info("📦 Loading plugins...")
+    
+    plugins_dir = "plugins"
+    if not os.path.exists(plugins_dir):
+        LOGGER.warning(f"⚠️ {plugins_dir} folder not found!")
+        return 0
+    
+    plugin_files = glob.glob(f"{plugins_dir}/*.py")
+    loaded = 0
+    
+    for file_path in plugin_files:
+        plugin_name = os.path.basename(file_path)[:-3]  # Remove .py
+        
+        # Skip __init__ and certain debug files
+        if plugin_name in ['__init__', 'debug_emergency', 'verbose_logger', 'ultra_simple']:
+            continue
+        
+        try:
+            module_name = f"plugins.{plugin_name}"
+            importlib.import_module(module_name)
+            LOGGER.info(f"  ✅ Loaded: {plugin_name}")
+            loaded += 1
+        except Exception as e:
+            LOGGER.error(f"  ❌ Failed to load {plugin_name}: {e}")
+    
+    LOGGER.info(f"✅ Loaded {loaded} plugins!")
+    return loaded
 
 
 # Web server for Render (keeps service alive)
@@ -196,6 +158,9 @@ async def main():
     print("\n" + "=" * 70)
     print("🚀 Starting Bot with Web Server...")
     print("=" * 70 + "\n")
+    
+    # Load plugins FIRST
+    load_plugins()
     
     bot = Bot()
     web_runner = None
