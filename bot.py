@@ -3567,6 +3567,30 @@ async def stats_refresh_callback(client: Client, query: CallbackQuery):
     
     await query.message.edit_text(text, reply_markup=buttons)
 
+# Add web server for Render (at the end of bot.py, before main())
+from aiohttp import web
+import os
+
+async def health_check(request):
+    """Health check endpoint for Render"""
+    return web.Response(text="✅ Bot is running!")
+
+async def start_web_server():
+    """Start HTTP server for Render's port requirement"""
+    app = web.Application()
+    app.router.add_get('/', health_check)
+    app.router.add_get('/health', health_check)
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    
+    port = int(os.environ.get('PORT', 8080))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    
+    LOGGER.info(f"✅ Web server started on port {port}")
+    return runner
+
 async def main():
     """Main function to run the bot"""
     import config
@@ -3583,10 +3607,18 @@ async def main():
         except:
             pass
     
+    # Start web server FIRST (for Render)
+    web_runner = await start_web_server()
+    
     # Start bot
     await bot.start()
+    
+    # Keep running
     await idle()
+    
+    # Cleanup
     await bot.stop()
+    await web_runner.cleanup()
 
 if __name__ == "__main__":
     try:
