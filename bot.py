@@ -27,36 +27,30 @@ except ImportError:
     print("ERROR: pyromod not installed!")
     sys.exit(1)
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(asctime)s - %(levelname)s] - %(name)s - %(message)s",
-    datefmt='%d-%b-%y %H:%M:%S'
-)
-logging.getLogger("pyrogram").setLevel(logging.WARNING)
+# ============================================================================
+# 🛠 CONFIGURATION SECTION (THE BRAIN)
+# ============================================================================
+try:
+    import config
+    from config import (
+        API_ID, API_HASH, BOT_TOKEN, ADMINS, CHANNELS, 
+        UPDATES_CHANNEL, SUPPORT_CHAT, FORCE_SUB_CHANNELS, 
+        AUTO_DELETE_TIME, CUSTOM_CAPTION, PROTECT_CONTENT, 
+        REQUEST_FSUB, BOT_PICS, WELCOME_TEXT, FORCE_SUB_TEXT, 
+        CUSTOM_BUTTONS, HIDE_CAPTION
+    )
+    # Essential Defaults
+    CHANNEL_BUTTON = getattr(config, 'CHANNEL_BUTTON', True)
+except ImportError:
+    print("CRITICAL: config.py missing!")
+    sys.exit(1)
+
+# Global Filters
+ADMIN_FILTER = filters.user(ADMINS)
+
+# Logging Setup
+logging.basicConfig(level=logging.INFO, format="[%(asctime)s - %(levelname)s] - %(name)s - %(message)s")
 LOGGER = logging.getLogger(__name__)
-
-# Import config
-import config
-
-# Global variables from config
-ADMINS = config.ADMINS
-BOT_PICS = config.BOT_PICS
-WELCOME_TEXT = config.WELCOME_TEXT
-HELP_TEXT = config.HELP_TEXT
-ABOUT_TEXT = config.ABOUT_TEXT
-FORCE_SUB_TEXT = config.FORCE_SUB_TEXT
-FORCE_SUB_CHANNELS = config.FORCE_SUB_CHANNELS
-REQUEST_FSUB = config.REQUEST_FSUB
-PROTECT_CONTENT = config.PROTECT_CONTENT
-HIDE_CAPTION = config.HIDE_CAPTION
-CUSTOM_CAPTION = config.CUSTOM_CAPTION
-AUTO_DELETE_TIME = config.AUTO_DELETE_TIME
-CHANNEL_BUTTON = config.CHANNEL_BUTTON
-CUSTOM_BUTTONS = config.CUSTOM_BUTTONS
-SUPPORT_CHAT = config.SUPPORT_CHAT
-UPDATES_CHANNEL = config.UPDATES_CHANNEL
-CHANNELS = config.CHANNELS
 
 # ============================================================================
 # BOT CLASS
