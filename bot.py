@@ -2385,12 +2385,12 @@ class Bot(Client):
 
         # Time buttons (only show if auto delete is enabled)
         if auto_delete:
-        time_buttons = []
-        for time_sec in AUTO_DELETE_TIMES:
-            time_display = format_time(time_sec)
-            # Each button in its own row (optional: can also make side by side)
-            time_buttons.append([InlineKeyboardButton(time_display, callback_data=f"autodel_{time_sec}")])
-            buttons.extend(time_buttons)
+            time_buttons = []
+            for time_sec in AUTO_DELETE_TIMES:
+                time_display = format_time(time_sec)
+        # Each button in its own row (optional: can also make side by side)
+                time_buttons.append([InlineKeyboardButton(time_display, callback_data=f"autodel_{time_sec}")])
+                
 
             
             # Add time buttons in rows
