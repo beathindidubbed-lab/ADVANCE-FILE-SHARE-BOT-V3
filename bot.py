@@ -1376,22 +1376,22 @@ class Bot(Client):
         welcome_pic = get_random_pic(welcome_pics)
         
        # Default welcome text to match screenshot
-       if not welcome_text:
-         welcome_text = (
-              f"⚡ <b>Hey, {user.first_name} ~</b>\n\n"
-              "<blockquote expandable>"
-              "I AM AN ADVANCE FILE SHARE BOT V3.\n"
-              "THE BEST PART IS I AM ALSO SUPPORT REQUEST FORCESUB FEATURE.\n"
-              "TO KNOW DETAILED INFORMATION CLICK ABOUT ME BUTTON TO KNOW MY ALL ADVANCE FEATURES"
-              "</blockquote>"
+        if not welcome_text:
+                welcome_text = (
+                f"⚡ <b>Hey, {user.first_name} ~</b>\n\n"
+                "<blockquote expandable>"
+                "I AM AN ADVANCE FILE SHARE BOT V3.\n"
+                "THE BEST PART IS I AM ALSO SUPPORT REQUEST FORCESUB FEATURE.\n"
+                "TO KNOW DETAILED INFORMATION CLICK ABOUT ME BUTTON TO KNOW MY ALL ADVANCE FEATURES"
+                "</blockquote>"
          )
-       else:
-        welcome_text = welcome_text.format(
-            first=user.first_name,
-            last=user.last_name or "",
-            username=f"@{user.username}" if user.username else "None",
-            mention=f"<a href='tg://user?id={user.id}'>{user.first_name}</a>",
-            id=user.id
+        else:
+                welcome_text = welcome_text.format(
+                    first=user.first_name,
+                    last=user.last_name or "",
+                    username=f"@{user.username}" if user.username else "None",
+                    mention=f"<a href='tg://user?id={user.id}'>{user.first_name}</a>",
+                    id=user.id
         )
 
         
