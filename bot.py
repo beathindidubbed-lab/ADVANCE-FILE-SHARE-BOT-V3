@@ -998,7 +998,7 @@ class Bot(Client):
             await self.about_command(message)
         
         # === ADMIN MANAGEMENT COMMANDS ===
-        @self.on_message(filters.command("admin_list") & filters.private & filters.user([Config.OWNER_ID]))
+        @self.on_message(filters.command("users") & filters.private & filters.user([Config.OWNER_ID]))
         async def admin_list_handler(client, message):
             await self.admin_list_command(message)
         
@@ -1023,7 +1023,7 @@ class Bot(Client):
             await self.del_banuser_command(message)
         
         # === BASIC ADMIN COMMANDS ===
-        @self.on_message(filters.command("users") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("dmin_list") & filters.private & filters.user(Config.ADMINS))
         async def users_handler(client, message):
             await self.users_command(message)
         
@@ -1320,7 +1320,7 @@ class Bot(Client):
         
         # Delete previous bot message if auto-delete is enabled
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", true):
             await self.delete_previous_message(user_id)
         
         # Check if user is banned
@@ -1521,7 +1521,7 @@ class Bot(Client):
         
         # Schedule auto-delete if enabled
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", true):
             delay = settings.get("auto_delete_time_bot", 30)
             asyncio.create_task(self.auto_delete_message(message.chat.id, response.id, delay))
     
@@ -1535,7 +1535,7 @@ class Bot(Client):
         
         # Delete previous bot message if auto-delete is enabled
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", true):
             await self.delete_previous_message(user_id)
         
         # Get help text and pictures from settings
@@ -1563,8 +1563,8 @@ class Bot(Client):
         
         # Create simple buttons
         buttons = [
-            [InlineKeyboardButton("⬅️ Back", callback_data="start_menu")],
-            [InlineKeyboardButton("❌ Close", callback_data="close")]
+            [InlineKeyboardButton("🔙 ʙᴀᴄᴋ ", callback_data="start_menu")],
+            [InlineKeyboardButton(" ᴄʟᴏsᴇ ✖️", callback_data="close")]
         ]
         
         keyboard = InlineKeyboardMarkup(buttons)
@@ -1590,14 +1590,14 @@ class Bot(Client):
         self.user_last_messages[user_id] = response.id
         
         # Schedule auto-delete if enabled
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", true):
             delay = settings.get("auto_delete_time_bot", 30)
             asyncio.create_task(self.auto_delete_message(message.chat.id, response.id, delay))
     
     async def about_command(self, message: Message):
         """Handle /about command"""
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", true):
             await self.delete_previous_message(message.from_user.id)
         
         # Get about text from settings
@@ -1612,17 +1612,16 @@ class Bot(Client):
         if not about_text:
             about_text = (
                 f"ℹ️ <b>About Bot</b>\n\n"
-                f"• Bot Name: {Config.BOT_NAME}\n"
-                f"• Username: @{Config.BOT_USERNAME}\n"
-                f"• Framework: Pyrogram\n"
-                f"• Language: Python 3\n"
-                f"• Version: V3.0\n\n"
-                f"Made with ❤️ for Telegram"
+                f"<b>• Bot Name: {Config.BOT_NAME}</b>\n"
+                f"<b>• Framework: Pyrogram</b>\n"
+                f"<b>• Language: Python 3</b>\n"
+                f"<b>• Version: V3.0</b>\n\n"
+                f"<b>Developed by @Beat_Anime_Ocean</b>"
             )
         
         buttons = [
-            [InlineKeyboardButton("⬅️ Back", callback_data="start_menu")],
-            [InlineKeyboardButton("❌ Close", callback_data="close")]
+            [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="start_menu")],
+            [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
         ]
         
         keyboard = InlineKeyboardMarkup(buttons)
@@ -1646,7 +1645,7 @@ class Bot(Client):
         
         self.user_last_messages[message.from_user.id] = response.id
         
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", true):
             delay = settings.get("auto_delete_time_bot", 30)
             asyncio.create_task(self.auto_delete_message(message.chat.id, response.id, delay))
     
@@ -1672,18 +1671,19 @@ class Bot(Client):
             
             # Format message in screenshot style
             admin_text = (
-                "# USER SETTING COMMANDS :\n\n"
-                "/admin_list : VIEW THE AVAILABLE ADMIN LIST (OWNER)\n\n"
-                "/add_admins : ADD ONE OR MULTIPLE USER IDS AS ADMIN (OWNER)\n\n"
-                "/del_admins : DELETE ONE OR MULTIPLE USER IDS FROM ADMINS (OWNER)\n\n"
-                "/banuser_list : VIEW THE AVAILABLE BANNED USER LIST (ADMINS)\n\n"
-                "/add_banuser : ADD ONE OR MULTIPLE USER IDS IN BANNED LIST (ADMINS)\n\n"
-                "/del_banuser : DELETE ONE OR MULTIPLE USER IDS FROM BANNED LIST (ADMINS)"
+                " <b>🤖 𝗨𝗦𝗘𝗥 𝗦𝗘𝗧𝗧𝗜𝗡𝗚 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦 :</b>\n\n"
+                "<b>/admin_list : ᴠɪᴇᴡ ᴛʜᴇ ᴀᴠᴀɪʟᴀʙʟᴇ ᴀᴅᴍɪɴ ʟɪsᴛ (ᴏᴡɴᴇʀ)</b>\n\n"
+                "<b>/add_admins : ᴀᴅᴅ ᴏɴᴇ ᴏʀ ᴍᴜʟᴛɪᴘʟᴇ ᴜsᴇʀ ɪᴅs ᴀs ᴀᴅᴍɪɴ (ᴏᴡɴᴇʀ)</b>\n\n"
+                "<b>/del_admins : ᴅᴇʟᴇᴛᴇ ᴏɴᴇ ᴏʀ ᴍᴜʟᴛɪᴘʟᴇ ᴜsᴇʀ ɪᴅs ғʀᴏᴍ ᴀᴅᴍɪɴs (ᴏᴡɴᴇʀ)</b>\n\n"
+                "<b>/banuser_list : ᴠɪᴇᴡ ᴛʜᴇ ᴀᴠᴀɪʟᴀʙʟᴇ ʙᴀɴɴᴇᴅ ᴜsᴇʀ ʟɪsᴛ (ᴀᴅᴍɪɴs)</b>\n\n"
+                "<b>/add_banuser : ᴀᴅᴅ ᴏɴᴇ ᴏʀ ᴍᴜʟᴛɪᴘʟᴇ ᴜsᴇʀ ɪᴅs ɪɴ ʙᴀɴɴᴇᴅ ʟɪsᴛ (ᴀᴅᴍɪɴs)</b>\n\n"
+                "<b>/del_banuser : ᴅᴇʟᴇᴛᴇ ᴏɴᴇ ᴏʀ ᴍᴜʟᴛɪᴘʟᴇ ᴜsᴇʀ ɪᴅs ғʀᴏᴍ ʙᴀɴɴᴇᴅ ʟɪsᴛ (ᴀᴅᴍɪɴs)</b>"
+
             )
             
             buttons = [
-                [InlineKeyboardButton("⬅️ Back", callback_data="admin_panel")],
-                [InlineKeyboardButton("❌ Close", callback_data="close")]
+                [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="admin_panel")],
+                [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
             ]
             
             keyboard = InlineKeyboardMarkup(buttons)
@@ -1697,7 +1697,7 @@ class Bot(Client):
             self.user_last_messages[message.from_user.id] = response.id
             
         except Exception as e:
-            logger.error(f"Error in admin_list command: {e}")
+            logger.error(f"Error in users command: {e}")
             response = await message.reply("❌ Error fetching admin list!")
             self.user_last_messages[message.from_user.id] = response.id
     
@@ -1750,8 +1750,8 @@ class Bot(Client):
             
             if added_admins:
                 response = await message.reply(
-                    f"✅ <b>Admins Added!</b>\n\n"
-                    f"Added {len(added_admins)} admin(s)\n"
+                    f"✅ <b>ᴀᴅᴍɪɴs ᴀᴅᴅᴇᴅ!</b>\n\n"
+                    f"ᴀᴅᴅᴇᴅ {len(added_admins)} ᴀᴅᴍɪɴ(s)\n"
                     + "\n".join(f"• {admin}" for admin in added_admins),
                     parse_mode=enums.ParseMode.HTML
                 )
@@ -1773,10 +1773,10 @@ class Bot(Client):
         
         if len(message.command) < 2:
             response = await message.reply(
-                "🗑️ <b>DELETE ADMINS</b>\n\n"
-                "Usage: <code>/del_admins user_id1,user_id2</code>\n\n"
-                "Example: <code>/del_admins 123456789,987654321</code>\n\n"
-                "Note: Cannot remove owner!",
+                "🗑️ <b>ᴅᴇʟᴇᴛᴇ ᴀᴅᴍɪɴs</b>\n\n"
+                "ᴜsᴀɢᴇ: <code>/del_admins ᴜsᴇʀ_ɪᴅ1,ᴜsᴇʀ_ɪᴅ2</code>\n\n"
+                "ᴇxᴀᴍᴘʟᴇ: <code>/del_admins 123456789,987654321</code>\n\n"
+                "ɴᴏᴛᴇ: ᴄᴀɴɴᴏᴛ ʀᴇᴍᴏᴠᴇ ᴏᴡɴᴇʀ!",
                 parse_mode=enums.ParseMode.HTML
             )
             self.user_last_messages[message.from_user.id] = response.id
@@ -1857,8 +1857,8 @@ class Bot(Client):
             ban_text += f"📊 Total Banned: {len(banned_users)}"
             
             buttons = [
-                [InlineKeyboardButton("⬅️ Back", callback_data="admin_panel")],
-                [InlineKeyboardButton("❌ Close", callback_data="close")]
+                [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="admin_panel")],
+                [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
             ]
             
             keyboard = InlineKeyboardMarkup(buttons)
@@ -2031,16 +2031,15 @@ class Bot(Client):
         # Format message exactly like screenshot
         forcesub_text = (
             f"<b>{message.from_user.first_name}</b>\n"
-            "## /forcesub\n\n"
-            "**FORCE SUB COMMANDS :**\n\n"
-            "### /fsub_chnl : CHECK CURRENT FORCE SUB CHANNELS (ADMINS)\n\n"
-            "### /add_fsub : ADD ONE OR MULTIPLE FORCE SUB CHANNELS (OWNER)\n\n"
-            "### /del_fsub : DELETE ONE OR MULTIPLE FORCE SUB CHANNELS (OWNER)"
+            "<b>🤖 𝗙𝗢𝗥𝗖𝗘 𝗦𝗨𝗕 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦 </b>\n\n"
+            "<b>/fsub_chnl : CHECK CURRENT FORCE SUB CHANNELS (ADMINS)</b>\n\n"
+            "<b> /add_fsub : ADD ONE OR MULTIPLE FORCE SUB CHANNELS (OWNER)</b>\n\n"
+            "<b> /del_fsub : DELETE ONE OR MULTIPLE FORCE SUB CHANNELS (OWNER)</b>"
         )
         
         buttons = [
-            [InlineKeyboardButton("⬅️ Back", callback_data="settings_menu")],
-            [InlineKeyboardButton("❌ Close", callback_data="close")]
+            [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu")],
+            [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
         ]
         
         keyboard = InlineKeyboardMarkup(buttons)
