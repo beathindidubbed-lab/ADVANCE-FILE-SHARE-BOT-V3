@@ -2091,7 +2091,7 @@ class Bot(Client):
             buttons.append([
                 InlineKeyboardButton(" ᴏғғ 🔴", callback_data="reqfsub_off"),
             InlineKeyboardButton("ᴍᴏʀᴇ sᴇᴛᴛɪɴɢs", callback_data="force_sub_settings")
-        ]))
+        ])
         else:
             buttons.append([
                 InlineKeyboardButton("ᴏɴ 🟢", callback_data="reqfsub_on"),
