@@ -2368,32 +2368,30 @@ class Bot(Client):
         time_text = format_time(auto_delete_time)
         
         auto_del_text = (
-            "<b>AUTO DELETE SETTINGS</b>\n\n"
-            f"AUTO DELETE MODE: {status}\n\n"
-            f"DELETE TIMER: {time_text}\n\n"
-            "CLICK BELOW BUTTONS TO CHANGE SETTINGS"
+            "<b>🤖 𝗔𝗨𝗧𝗢 𝗗𝗘𝗟𝗘𝗧𝗘 𝗦𝗘𝗧𝗧𝗜𝗡𝗚𝗦 ⚙️</b>\n\n"
+            f"<blockquote expandable><b>"
+            f"🗑️ ᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ ᴍᴏᴅᴇ: {status}\n"
+            f"⏱️ ᴅᴇʟᴇᴛᴇ ᴛɪᴍᴇʀ: {time_text}\n"
+            f"</b></blockquote>\n"
+            "<b>ᴄʟɪᴄᴋ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴs ᴛᴏ ᴄʜᴀɴɢᴇ sᴇᴛᴛɪɴɢs</b>"
         )
         
         buttons = []
-        
-        # Toggle button
-        if auto_delete:
-            buttons.append([
-                InlineKeyboardButton("❌ DISABLE MODE", callback_data="toggle_auto_delete")
-            ])
-        else:
-            buttons.append([
-                InlineKeyboardButton("✅ ENABLE MODE", callback_data="toggle_auto_delete")
-            ])
-        
+
+        # Auto Delete toggle button
+        buttons.append([
+               InlineKeyboardButton(f"Auto Delete: {'✅' if auto_delete else '❌'}", callback_data="toggle_auto_delete"),
+               InlineKeyboardButton("Set Timer ⏱️", callback_data="set_timer")])
+
         # Time buttons (only show if auto delete is enabled)
         if auto_delete:
-            time_buttons = []
-            for time_sec in AUTO_DELETE_TIMES:
-                time_display = format_time(time_sec)
-                time_buttons.append(
-                    InlineKeyboardButton(time_display, callback_data=f"autodel_{time_sec}")
-                )
+        time_buttons = []
+        for time_sec in AUTO_DELETE_TIMES:
+            time_display = format_time(time_sec)
+            # Each button in its own row (optional: can also make side by side)
+            time_buttons.append([InlineKeyboardButton(time_display, callback_data=f"autodel_{time_sec}")])
+            buttons.extend(time_buttons)
+
             
             # Add time buttons in rows
             buttons.append(time_buttons[:3])  # First 3
@@ -2401,8 +2399,8 @@ class Bot(Client):
                 buttons.append(time_buttons[3:])  # Remaining
         
         buttons.append([
-            InlineKeyboardButton("🔄 REFRESH", callback_data="refresh_autodel"),
-            InlineKeyboardButton("❌ CLOSE", callback_data="close")
+            InlineKeyboardButton("ʀᴇғʀᴇsʜ", callback_data="refresh_autodel"),
+            InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")
         ])
         
         keyboard = InlineKeyboardMarkup(buttons)
