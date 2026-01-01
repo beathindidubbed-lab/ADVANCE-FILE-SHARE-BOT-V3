@@ -99,9 +99,12 @@ REACTIONS = ["😍", "🥰", "🤩", "😱", "👏", "🎉", "⚡️", "😎", "
 
 # Bot Commands Configuration (Same as before)
 BOT_COMMANDS = {
+    "all_users": [
         BotCommand("start", "Check bot status"),
         BotCommand("help", "Get help"),
-        BotCommand("ping", "Check bot ping"),
+        BotCommand("ping", "Check bot ping")
+    ],
+    "admins": [
         BotCommand("getlink", "Generate file link"),
         BotCommand("batch", "Store multiple files"),
         BotCommand("custom_batch", "Store files with custom message"),
@@ -137,7 +140,9 @@ BOT_COMMANDS = {
         BotCommand("add_fsub", "Add force sub channel"),
         BotCommand("del_fsub", "Delete force sub channel"),
         BotCommand("done", "Finish operation")
+    ]
 }
+
 
 
 # ===================================
