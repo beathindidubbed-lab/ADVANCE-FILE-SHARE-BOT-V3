@@ -1320,7 +1320,7 @@ class Bot(Client):
         
         # Delete previous bot message if auto-delete is enabled
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", true):
+        if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(user_id)
         
         # Check if user is banned
@@ -1375,23 +1375,25 @@ class Bot(Client):
         # Get random welcome picture
         welcome_pic = get_random_pic(welcome_pics)
         
-        # Default welcome text to match screenshot
-        if not welcome_text:
-            welcome_text = (
-                f"""<b>Hey, {user.first_name} ~</b><\n\n
-                <blockqoute expandable>I AM AN ADVANCE FILE SHARE BOT V3.\n
-                THE BEST PART IS I AM ALSO SUPPORT REQUEST FORCESUB\n
-                FEATURE, TO KNOW DETAILED INFORMATION CLICK ABOUT ME/blockquote>"""
-            )
-        else:
-            # Replace variables
-            welcome_text = welcome_text.format(
-                first=user.first_name,
-                last=user.last_name or "",
-                username=f"@{user.username}" if user.username else "None",
-                mention=f"<a href='tg://user?id={user.id}'>{user.first_name}</a>",
-                id=user.id
-            )
+       # Default welcome text to match screenshot
+       if not welcome_text:
+         welcome_text = (
+              f"⚡ <b>Hey, {user.first_name} ~</b>\n\n"
+              "<blockquote expandable>"
+              "I AM AN ADVANCE FILE SHARE BOT V3.\n"
+              "THE BEST PART IS I AM ALSO SUPPORT REQUEST FORCESUB FEATURE.\n"
+              "TO KNOW DETAILED INFORMATION CLICK ABOUT ME BUTTON TO KNOW MY ALL ADVANCE FEATURES"
+              "</blockquote>"
+         )
+       else:
+        welcome_text = welcome_text.format(
+            first=user.first_name,
+            last=user.last_name or "",
+            username=f"@{user.username}" if user.username else "None",
+            mention=f"<a href='tg://user?id={user.id}'>{user.first_name}</a>",
+            id=user.id
+        )
+
         
         # Create buttons - SIMPLE LAYOUT LIKE SCREENSHOT
         buttons = []
@@ -1432,7 +1434,7 @@ class Bot(Client):
         
         # Schedule auto-delete if enabled
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", True):
             delay = settings.get("auto_delete_time_bot", 30)
             asyncio.create_task(self.auto_delete_message(message.chat.id, response.id, delay))
     
@@ -1494,10 +1496,13 @@ class Bot(Client):
         # Message text matching screenshot
         message_text = (
             f"<b>Hey, {user.first_name}</b>\n\n"
-            f"""<blockqoute expandable><b>You haven't joined {joined_count}/{total_channels} channels yet. 
-            Please join the channels provided below, then try again.</b></blockquote>\n\n
-            <blockqoute expandable><b>Facing problems, use: /help</b></blockquote>"""
+            f"<blockquote expandable><b>"
+            f"You haven't joined {joined_count}/{total_channels} channels yet.\n"
+            f"Please join the channels provided below, then try again."
+            f"</b></blockquote>\n\n"
+            f"<blockquote expandable><b>Facing problems, use: /help</b></blockquote>"
         )
+
         
         try:
             # Try to send photo with caption
@@ -1521,7 +1526,7 @@ class Bot(Client):
         
         # Schedule auto-delete if enabled
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", true):
+        if settings.get("auto_delete_bot_messages", True):
             delay = settings.get("auto_delete_time_bot", 30)
             asyncio.create_task(self.auto_delete_message(message.chat.id, response.id, delay))
     
@@ -1535,7 +1540,7 @@ class Bot(Client):
         
         # Delete previous bot message if auto-delete is enabled
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", true):
+        if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(user_id)
         
         # Get help text and pictures from settings
@@ -1550,22 +1555,27 @@ class Bot(Client):
         if not help_text:
             help_text = (
                 f"<b>⁉️ Hᴇʟʟᴏ {message.from_user.first_name} ~</b>\n\n"
-
-                """<blockqoute expandable><b>➪ I ᴀᴍ ᴀ ᴘʀɪᴠᴀᴛᴇ ғɪʟᴇ sʜᴀʀɪɴɢ ʙᴏᴛ, ᴍᴇᴀɴᴛ ᴛᴏ ᴘʀᴏᴠɪᴅᴇ ғɪʟᴇs ᴀɴᴅ ɴᴇᴄᴇssᴀʀʏ sᴛᴜғғ ᴛʜʀᴏᴜɢʜ sᴘᴇᴄɪᴀʟ ʟɪɴᴋ ғᴏʀ sᴘᴇᴄɪғɪᴄ ᴄʜᴀɴɴᴇʟs.
-
-                ➪ Iɴ ᴏʀᴅᴇʀ ᴛᴏ ɢᴇᴛ ᴛʜᴇ ғɪʟᴇs ʏᴏᴜ ʜᴀᴠᴇ ᴛᴏ ᴊᴏɪɴ ᴛʜᴇ ᴀʟʟ ᴍᴇɴᴛɪᴏɴᴇᴅ ᴄʜᴀɴɴᴇʟ ᴛʜᴀᴛ ɪ ᴘʀᴏᴠɪᴅᴇ ʏᴏᴜ ᴛᴏ ᴊᴏɪɴ. Yᴏᴜ ᴄᴀɴ ɴᴏᴛ ᴀᴄᴄᴇss ᴏʀ ɢᴇᴛ ᴛʜᴇ ғɪʟᴇs ᴜɴʟᴇss ʏᴏᴜ ᴊᴏɪɴᴇᴅ ᴀʟʟ ᴄʜᴀɴɴᴇʟs.
-
-                ➪ Sᴏ ᴊᴏɪɴ Mᴇɴᴛɪᴏɴᴇᴅ Cʜᴀɴɴᴇʟs ᴛᴏ ɢᴇᴛ Fɪʟᴇs ᴏʀ ɪɴɪᴛɪᴀᴛᴇ ᴍᴇssᴀɢᴇs...
-
-                ‣ /help - Oᴘᴇɴ ᴛʜɪs ʜᴇʟᴘ ᴍᴇssᴀɢᴇ !</b></blockquote>
-                <b>◈ Sᴛɪʟʟ ʜᴀᴠᴇ ᴅᴏᴜʙᴛs, ᴄᴏɴᴛᴀᴄᴛ ʙᴇʟᴏᴡ ᴘᴇʀsᴏɴs/ɢʀᴏᴜᴘ ᴀs ᴘᴇʀ ʏᴏᴜʀ ɴᴇᴇᴅ !</b>"""
+                "<blockquote expandable><b>"
+                "➪ I ᴀᴍ ᴀ ᴘʀɪᴠᴀᴛᴇ ғɪʟᴇ sʜᴀʀɪɴɢ ʙᴏᴛ, ᴍᴇᴀɴᴛ ᴛᴏ ᴘʀᴏᴠɪᴅᴇ ғɪʟᴇs ᴀɴᴅ ɴᴇᴄᴇssᴀʀʏ sᴛᴜғғ ᴛʜʀᴏᴜɢʜ sᴘᴇᴄɪᴀʟ ʟɪɴᴋ ғᴏʀ sᴘᴇᴄɪғɪᴄ ᴄʜᴀɴɴᴇʟs.\n\n"
+                "➪ Iɴ ᴏʀᴅᴇʀ ᴛᴏ ɢᴇᴛ ᴛʜᴇ ғɪʟᴇs ʏᴏᴜ ʜᴀᴠᴇ ᴛᴏ ᴊᴏɪɴ ᴛʜᴇ ᴀʟʟ ᴍᴇɴᴛɪᴏɴᴇᴅ ᴄʜᴀɴɴᴇʟ ᴛʜᴀᴛ ɪ ᴘʀᴏᴠɪᴅᴇ ʏᴏᴜ ᴛᴏ ᴊᴏɪɴ. "
+                "Yᴏᴜ ᴄᴀɴ ɴᴏᴛ ᴀᴄᴄᴇss ᴏʀ ɢᴇᴛ ᴛʜᴇ ғɪʟᴇs ᴜɴʟᴇss ʏᴏᴜ ᴊᴏɪɴᴇᴅ ᴀʟʟ ᴄʜᴀɴɴᴇʟs.\n\n"
+                "➪ Sᴏ ᴊᴏɪɴ Mᴇɴᴛɪᴏɴᴇᴅ Cʜᴀɴɴᴇʟs ᴛᴏ ɢᴇᴛ Fɪʟᴇs ᴏʀ ɪɴɪᴛɪᴀᴛᴇ ᴍᴇssᴀɢᴇs...\n\n"
+                "‣ /help - Oᴘᴇɴ ᴛʜɪs ʜᴇʟᴘ ᴍᴇssᴀɢᴇ !"
+                "</b></blockquote>\n"
+                "<b>◈ Sᴛɪʟʟ ʜᴀᴠᴇ ᴅᴏᴜʙᴛs, ᴄᴏɴᴛᴀᴄᴛ ʙᴇʟᴏᴡ ᴘᴇʀsᴏɴs/ɢʀᴏᴜᴘ ᴀs ᴘᴇʀ ʏᴏᴜʀ ɴᴇᴇᴅ !</b>"
             )
+
         
         # Create simple buttons
         buttons = [
+            [InlineKeyboardButton("ᴀɴɪᴍᴇ ᴄʜᴀɴɴᴇʟ", url=f"https://t.me/BeatAnime"),
+            InlineKeyboardButton("ᴄᴏɴᴛᴀᴄᴛ ᴀᴅᴍɪɴ", url=f"https://t.me/Beat_Anime_Ocean")],
+            [InlineKeyboardButton("ᴀʙᴏᴜᴛ ᴍᴇ", callback_data="about_text")],
             [InlineKeyboardButton("🔙 ʙᴀᴄᴋ ", callback_data="start_menu")],
             [InlineKeyboardButton(" ᴄʟᴏsᴇ ✖️", callback_data="close")]
         ]
+        
+                
         
         keyboard = InlineKeyboardMarkup(buttons)
         
@@ -1590,14 +1600,14 @@ class Bot(Client):
         self.user_last_messages[user_id] = response.id
         
         # Schedule auto-delete if enabled
-        if settings.get("auto_delete_bot_messages", true):
+        if settings.get("auto_delete_bot_messages", True):
             delay = settings.get("auto_delete_time_bot", 30)
             asyncio.create_task(self.auto_delete_message(message.chat.id, response.id, delay))
     
     async def about_command(self, message: Message):
         """Handle /about command"""
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", true):
+        if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
         
         # Get about text from settings
@@ -1645,7 +1655,7 @@ class Bot(Client):
         
         self.user_last_messages[message.from_user.id] = response.id
         
-        if settings.get("auto_delete_bot_messages", true):
+        if settings.get("auto_delete_bot_messages", True):
             delay = settings.get("auto_delete_time_bot", 30)
             asyncio.create_task(self.auto_delete_message(message.chat.id, response.id, delay))
     
@@ -1656,7 +1666,7 @@ class Bot(Client):
     async def admin_list_command(self, message: Message):
         """Handle /admin_list command"""
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
         
         try:
@@ -1704,12 +1714,12 @@ class Bot(Client):
     async def add_admins_command(self, message: Message):
         """Handle /add_admins command"""
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
         
         if len(message.command) < 2:
             response = await message.reply(
-                "👑 <b>ADD ADMINS</b>\n\n"
+                " <b>𝗔𝗗𝗗 𝗔𝗗𝗠𝗜𝗡𝗦</b>\n\n"
                 "Usage: <code>/add_admins user_id1,user_id2</code>\n\n"
                 "Example: <code>/add_admins 123456789,987654321</code>",
                 parse_mode=enums.ParseMode.HTML
@@ -1768,7 +1778,7 @@ class Bot(Client):
     async def del_admins_command(self, message: Message):
         """Handle /del_admins command"""
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
         
         if len(message.command) < 2:
@@ -1830,7 +1840,7 @@ class Bot(Client):
     async def banuser_list_command(self, message: Message):
         """Handle /banuser_list command"""
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
         
         try:
@@ -1843,7 +1853,7 @@ class Bot(Client):
                 return
             
             # Format message
-            ban_text = "🚫 <b>BANNED USERS LIST</b>\n\n"
+            ban_text = "<b>𝗕𝗔𝗡𝗡𝗘𝗗 𝗨𝗦𝗘𝗥𝗦 𝗟𝗜𝗦𝗧</b>\n\n"
             
             for i, ban in enumerate(banned_users[:10], 1):
                 user_id = ban["user_id"]
@@ -1879,12 +1889,12 @@ class Bot(Client):
     async def add_banuser_command(self, message: Message):
         """Handle /add_banuser command"""
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
         
         if len(message.command) < 2:
             response = await message.reply(
-                "🚫 <b>BAN USER</b>\n\n"
+                "🚫 <b>𝗕𝗔𝗡𝗡𝗘 𝗨𝗦𝗘𝗥</b>\n\n"
                 "Usage: <code>/add_banuser user_id1,user_id2 [reason]</code>\n\n"
                 "Example: <code>/add_banuser 123456789,987654321 Spamming</code>",
                 parse_mode=enums.ParseMode.HTML
@@ -1921,9 +1931,9 @@ class Bot(Client):
                     try:
                         await self.send_message(
                             user_id,
-                            f"🚫 <b>You have been banned!</b>\n\n"
-                            f"Reason: {reason}\n"
-                            f"Contact admin if this is a mistake.",
+                            f"🚫 <b>ʏᴏᴜ ʜᴀᴠᴇ ʙᴇᴇɴ ʙᴀɴɴᴇᴅ!</b>\n\n"
+                            f"ʀᴇᴀsᴏɴ: {reason}\n"
+                            f"ᴄᴏɴᴛᴀᴄᴛ ᴀᴅᴍɪɴ ɪꜰ ᴛʜɪs ɪs ᴀ ᴍɪsᴛᴀᴋᴇ.",
                             parse_mode=enums.ParseMode.HTML
                         )
                     except:
@@ -1954,12 +1964,12 @@ class Bot(Client):
     async def del_banuser_command(self, message: Message):
         """Handle /del_banuser command"""
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
         
         if len(message.command) < 2:
             response = await message.reply(
-                "✅ <b>UNBAN USER</b>\n\n"
+                "✅ <b>𝗨𝗡𝗕𝗔𝗡 𝗨𝗦𝗘𝗥</b>\n\n"
                 "Usage: <code>/del_banuser user_id1,user_id2</code>\n\n"
                 "Example: <code>/del_banuser 123456789,987654321</code>",
                 parse_mode=enums.ParseMode.HTML
@@ -1990,8 +2000,8 @@ class Bot(Client):
                     try:
                         await self.send_message(
                             user_id,
-                            "✅ <b>You have been unbanned!</b>\n\n"
-                            "You can now use the bot again.",
+                            "✅ <bʏᴏᴜ ʜᴀᴠᴇ ʙᴇᴇɴ ᴜɴʙᴀɴɴᴇᴅ!</b>\n\n"
+                            "ʏᴏᴜ ᴄᴀɴ ɴᴏᴡ ᴜsᴇ ᴛʜᴇ ʙᴏᴛ ᴀɢᴀɪɴ.",
                             parse_mode=enums.ParseMode.HTML
                         )
                     except:
@@ -2025,16 +2035,15 @@ class Bot(Client):
     async def forcesub_command(self, message: Message):
         """Handle /forcesub command"""
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
         
         # Format message exactly like screenshot
         forcesub_text = (
-            f"<b>{message.from_user.first_name}</b>\n"
-            "<b>🤖 𝗙𝗢𝗥𝗖𝗘 𝗦𝗨𝗕 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦 </b>\n\n"
+            "<b>🤖 𝗙𝗢𝗥𝗖𝗘 𝗦𝗨𝗕 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦</b>\n\n"
             "<b>/fsub_chnl : CHECK CURRENT FORCE SUB CHANNELS (ADMINS)</b>\n\n"
-            "<b> /add_fsub : ADD ONE OR MULTIPLE FORCE SUB CHANNELS (OWNER)</b>\n\n"
-            "<b> /del_fsub : DELETE ONE OR MULTIPLE FORCE SUB CHANNELS (OWNER)</b>"
+            "<b>/add_fsub : ADD ONE OR MULTIPLE FORCE SUB CHANNELS (OWNER)</b>\n\n"
+            "<b>/del_fsub : DELETE ONE OR MULTIPLE FORCE SUB CHANNELS (OWNER)</b>"
         )
         
         buttons = [
@@ -2080,20 +2089,18 @@ class Bot(Client):
         
         if request_fsub:
             buttons.append([
-                InlineKeyboardButton("❌ OFF", callback_data="reqfsub_off")
-            ])
+                InlineKeyboardButton(" ᴏғғ 🔴", callback_data="reqfsub_off"),
+            InlineKeyboardButton("ᴍᴏʀᴇ sᴇᴛᴛɪɴɢs", callback_data="force_sub_settings")
+        ]))
         else:
             buttons.append([
-                InlineKeyboardButton("✅ ON", callback_data="reqfsub_on")
-            ])
-        
-        buttons.append([
-            InlineKeyboardButton("MORE SETTINGS", callback_data="force_sub_settings")
+                InlineKeyboardButton("ᴏɴ 🟢", callback_data="reqfsub_on"),
+            InlineKeyboardButton("ᴍᴏʀᴇ sᴇᴛᴛɪɴɢs", callback_data="force_sub_settings")
         ])
         
         buttons.append([
-            InlineKeyboardButton("⬅️ Back", callback_data="settings_menu"),
-            InlineKeyboardButton("❌ Close", callback_data="close")
+            InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu"),
+            InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")
         ])
         
         keyboard = InlineKeyboardMarkup(buttons)
@@ -2131,7 +2138,7 @@ class Bot(Client):
             self.user_last_messages[message.from_user.id] = response.id
             return
         
-        channel_text = "📢 <b>FORCE SUB CHANNELS</b>\n\n"
+        channel_text = " 🤖<b>𝗙𝗢𝗥𝗖𝗘 𝗦𝗨𝗕 𝗖𝗛𝗔𝗡𝗡𝗘𝗟𝗦</b>\n\n"
         
         for i, channel in enumerate(channels, 1):
             channel_id = channel["channel_id"]
@@ -2147,11 +2154,11 @@ class Bot(Client):
             except:
                 channel_text += f"{i}. {username}\n\n"
         
-        channel_text += f"📊 Total: {len(channels)} channels"
+        channel_text += f" ᴛᴏᴛᴀʟ 📊: {len(channels)} channels"
         
         buttons = [
-            [InlineKeyboardButton("⬅️ Back", callback_data="force_sub_settings")],
-            [InlineKeyboardButton("❌ Close", callback_data="close")]
+            [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="force_sub_settings")],
+            [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
         ]
         
         keyboard = InlineKeyboardMarkup(buttons)
@@ -2176,7 +2183,7 @@ class Bot(Client):
         
         if len(message.command) < 2:
             response = await message.reply(
-                "📢 <b>ADD FORCE SUB</b>\n\n"
+                " <b>𝗔𝗗𝗗 𝗙𝗢𝗥𝗖𝗘 𝗦𝗨𝗕</b>\n\n"
                 "Usage: <code>/add_fsub @channel</code>\n"
                 "or\n"
                 "<code>/add_fsub -100123456</code>",
@@ -2224,7 +2231,7 @@ class Bot(Client):
         
         if len(message.command) < 2:
             response = await message.reply(
-                "🗑️ <b>REMOVE FORCE SUB</b>\n\n"
+                "🗑️ <b>𝗥𝗘𝗠𝗢𝗩𝗘 𝗙𝗢𝗥𝗖𝗘 𝗦𝗨𝗕</b>\n\n"
                 "Usage: <code>/del_fsub -100123456</code>",
                 parse_mode=enums.ParseMode.HTML
             )
@@ -2263,7 +2270,7 @@ class Bot(Client):
     async def files_command(self, message: Message):
         """Handle /files command WITH PHOTO"""
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
         
         # Get current settings
@@ -2278,17 +2285,20 @@ class Bot(Client):
         files_pic = get_random_pic(files_pics)
         
         # Format exactly like screenshot
-        protect_status = "DISABLED" if not protect_content else "ENABLED"
-        hide_status = "DISABLED" if not hide_caption else "ENABLED"
-        button_status = "ENABLED" if channel_button else "DISABLED"
+        protect_status = "ᴅɪsᴀʙʟᴇᴅ ❌" if not protect_content else "ᴇɴᴀʙʟᴇᴅ ✅"
+        hide_status = "ᴅɪsᴀʙʟᴇᴅ ❌" if not hide_caption else "ᴇɴᴀʙʟᴇᴅ ✅"
+        button_status = "ᴇɴᴀʙʟᴇᴅ ✅" if channel_button else "ᴅɪsᴀʙʟᴇᴅ ❌"
         
         files_text = (
-            "<b>FILES RELATED SETTINGS</b>\n\n"
-            f"PROTECT CONTENT: {protect_status}\n"
-            f"HIDE CAPTION: {hide_status}\n"
-            f"CHANNEL BUTTON: {button_status}\n\n"
-            "CLICK BELOW BUTTONS TO CHANGE SETTINGS"
+            "<b>𝗙𝗜𝗟𝗘𝗦 𝗥𝗘𝗟𝗔𝗧𝗘𝗗 𝗦𝗘𝗧𝗧𝗜𝗡𝗚𝗦</b>\n\n"
+            "<blockquote expandable><b>"
+            f"🔒ᴘʀᴏᴛᴇᴄᴛ ᴄᴏɴᴛᴇɴᴛ: {protect_status}\n"
+            f"🫥ʜɪᴅᴇ ᴄᴀᴘᴛɪᴏɴ: {hide_status}\n"
+            f"🔘ᴄʜᴀɴɴᴇʟ ʙᴜᴛᴛᴏɴ: {button_status}"
+            "</b></blockquote>\n\n"
+            "<b>ᴄʟɪᴄᴋ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴs ᴛᴏ ᴄʜᴀɴɢᴇ sᴇᴛᴛɪɴɢs</b>"
         )
+
         
         # Create toggle buttons - simple layout like screenshot
         buttons = []
@@ -2296,40 +2306,20 @@ class Bot(Client):
         # Protect Content toggle
         if protect_content:
             buttons.append([
-                InlineKeyboardButton("🔓 DISABLE PROTECT", callback_data="toggle_protect_content")
-            ])
-        else:
-            buttons.append([
-                InlineKeyboardButton("🔒 ENABLE PROTECT", callback_data="toggle_protect_content")
-            ])
-        
-        # Hide Caption toggle
-        if hide_caption:
-            buttons.append([
-                InlineKeyboardButton("👁️ SHOW CAPTION", callback_data="toggle_hide_caption")
-            ])
-        else:
-            buttons.append([
-                InlineKeyboardButton("👁️‍🗨️ HIDE CAPTION", callback_data="toggle_hide_caption")
+                InlineKeyboardButton(f"Protect Content: {'✅' if protect_content else '❌'}",callback_data="toggle_protect_content"),
+                InlineKeyboardButton(f"Hide Caption: {'✅' if hide_caption else '❌'}",callback_data="toggle_hide_caption")
             ])
         
         # Channel Button toggle
         if channel_button:
             buttons.append([
-                InlineKeyboardButton("📢 DISABLE BUTTON", callback_data="toggle_channel_button")
-            ])
-        else:
-            buttons.append([
-                InlineKeyboardButton("📢 ENABLE BUTTON", callback_data="toggle_channel_button")
-            ])
-        
-        buttons.append([
-            InlineKeyboardButton("🔘 CUSTOM BUTTON", callback_data="custom_buttons_menu")
+        InlineKeyboardButton(f"Channel Button: {'✅' if channel_button else '❌'}",callback_data="toggle_channel_button"),
+        InlineKeyboardButton("🔘 CUSTOM BUTTON", callback_data="custom_buttons_menu")
         ])
         
         buttons.append([
-            InlineKeyboardButton("⬅️ Back", callback_data="settings_menu"),
-            InlineKeyboardButton("❌ Close", callback_data="close")
+            InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu"),
+            InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")
         ])
         
         keyboard = InlineKeyboardMarkup(buttons)
@@ -2360,7 +2350,7 @@ class Bot(Client):
     async def auto_del_command(self, message: Message):
         """Handle /auto_del command WITH PHOTO"""
         settings = await self.db.get_settings()
-        if settings.get("auto_delete_bot_messages", False):
+        if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
         
         # Get current settings
