@@ -1495,7 +1495,7 @@ class Bot(Client):
         
         # Message text matching screenshot
         message_text = (
-            f"<b>Hey, {user.first_name}</b>\n\n"
+            f"<b>Hey, {first}</b>\n\n"
             f"<blockquote expandable><b>"
             f"You haven't joined {joined_count}/{total_channels} channels yet.\n"
             f"Please join the channels provided below, then try again."
@@ -1554,7 +1554,7 @@ class Bot(Client):
         # Default help text to match screenshot
         if not help_text:
             help_text = (
-                f"<b>⁉️ Hᴇʟʟᴏ {message.from_user.first_name} ~</b>\n\n"
+                f"<b>⁉️ Hᴇʟʟᴏ {first} ~</b>\n\n"
                 "<blockquote expandable><b>"
                 "➪ I ᴀᴍ ᴀ ᴘʀɪᴠᴀᴛᴇ ғɪʟᴇ sʜᴀʀɪɴɢ ʙᴏᴛ, ᴍᴇᴀɴᴛ ᴛᴏ ᴘʀᴏᴠɪᴅᴇ ғɪʟᴇs ᴀɴᴅ ɴᴇᴄᴇssᴀʀʏ sᴛᴜғғ ᴛʜʀᴏᴜɢʜ sᴘᴇᴄɪᴀʟ ʟɪɴᴋ ғᴏʀ sᴘᴇᴄɪғɪᴄ ᴄʜᴀɴɴᴇʟs.\n\n"
                 "➪ Iɴ ᴏʀᴅᴇʀ ᴛᴏ ɢᴇᴛ ᴛʜᴇ ғɪʟᴇs ʏᴏᴜ ʜᴀᴠᴇ ᴛᴏ ᴊᴏɪɴ ᴛʜᴇ ᴀʟʟ ᴍᴇɴᴛɪᴏɴᴇᴅ ᴄʜᴀɴɴᴇʟ ᴛʜᴀᴛ ɪ ᴘʀᴏᴠɪᴅᴇ ʏᴏᴜ ᴛᴏ ᴊᴏɪɴ. "
