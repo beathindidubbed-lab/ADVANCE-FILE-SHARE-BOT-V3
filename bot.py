@@ -1378,7 +1378,7 @@ class Bot(Client):
        # Default welcome text to match screenshot
         if not welcome_text:
                 welcome_text = (
-                f"⚡ <b>Hey, {user.first_name} ~</b>\n\n"
+                f"⚡ <b>Hey, {first} ~</b>\n\n"
                 "<blockquote expandable>"
                 "I AM AN ADVANCE FILE SHARE BOT V3.\n"
                 "THE BEST PART IS I AM ALSO SUPPORT REQUEST FORCESUB FEATURE.\n"
