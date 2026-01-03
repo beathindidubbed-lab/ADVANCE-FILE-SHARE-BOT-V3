@@ -3,6 +3,7 @@
 """
 🤖 TELEGRAM FILE SHARING BOT - UPDATED WITH ENHANCED AUTO-DELETE
 Only deletes conversation messages, preserves file and instruction messages
+FIXED VERSION - All issues resolved
 """
 
 # ===================================
@@ -143,7 +144,7 @@ BOT_COMMANDS = {
 }
 
 # ===================================
-# SECTION 2: CONFIGURATION CLASS
+# SECTION 2: CONFIGURATION CLASS (FIXED)
 # ===================================
 
 class Config:
@@ -177,8 +178,9 @@ class Config:
     UPDATE_CHANNEL = os.environ.get("UPDATE_CHANNEL", "").lstrip('@')
     SUPPORT_CHAT = os.environ.get("SUPPORT_CHAT", "").lstrip('@')
     
-    # Force subscribe channels (comma-separated)
-    FORCE_SUB_CHANNELS = [x.strip() for x in os.environ.get("FORCE_SUB_CHANNELS", "").split(",") if x.strip()]
+    # Force subscribe channels (comma-separated with format: channel_id:username)
+    FORCE_SUB_CHANNELS_RAW = [x.strip() for x in os.environ.get("FORCE_SUB_CHANNELS", "").split(",") if x.strip()]
+    FORCE_SUB_CHANNELS = []
     
     # Welcome images (comma-separated URLs)
     BOT_PICS = [x.strip() for x in os.environ.get("BOT_PICS", "").split(",") if x.strip()]
@@ -231,6 +233,35 @@ class Config:
     AUTO_CLEAN_JOIN_REQUESTS = os.environ.get("AUTO_CLEAN_JOIN_REQUESTS", "true").lower() == "true"
     AUTO_CLEAN_INTERVAL = int(os.environ.get("AUTO_CLEAN_INTERVAL", 86400))
     
+    @classmethod
+    def parse_force_sub_channels(cls):
+        """Parse force subscribe channels from environment variable"""
+        channels = []
+        for channel_str in cls.FORCE_SUB_CHANNELS_RAW:
+            if ':' in channel_str:
+                channel_id_str, username = channel_str.split(':', 1)
+                try:
+                    channel_id = int(channel_id_str.strip())
+                    username = username.strip().lstrip('@')
+                    channels.append({
+                        "channel_id": channel_id,
+                        "channel_username": username
+                    })
+                except ValueError:
+                    logger.error(f"Invalid channel ID format: {channel_id_str}")
+            else:
+                try:
+                    channel_id = int(channel_str.strip())
+                    channels.append({
+                        "channel_id": channel_id,
+                        "channel_username": None
+                    })
+                except ValueError:
+                    logger.error(f"Invalid channel ID format: {channel_str}")
+        
+        cls.FORCE_SUB_CHANNELS = channels
+        return channels
+    
     # Validation
     @classmethod
     def validate(cls):
@@ -276,7 +307,7 @@ class Config:
         logger.info("✓ Enhanced Auto-Delete: Only deletes conversation messages")
 
 # ===================================
-# SECTION 3: DATABASE CLASS
+# SECTION 3: DATABASE CLASS (FIXED - Admin check)
 # ===================================
 
 class Database:
@@ -576,11 +607,17 @@ class Database:
         return admins
     
     async def is_admin(self, user_id: int):
-        """Check if user is admin"""
+        """Check if user is admin - FIXED VERSION"""
+        # First check if user is in Config.ADMINS (includes owner)
+        if user_id in Config.ADMINS:
+            return True
+        
+        # Then check database
         admin = await self.admins.find_one({"user_id": user_id})
         if admin:
             return True
-        return user_id in Config.ADMINS
+        
+        return False
     
     # ===== JOIN REQUESTS =====
     
@@ -640,7 +677,7 @@ class Database:
             return 0
 
 # ===================================
-# SECTION 4: HELPER FUNCTIONS
+# SECTION 4: HELPER FUNCTIONS (FIXED - is_subscribed)
 # ===================================
 
 async def encode(string: str) -> str:
@@ -656,39 +693,78 @@ async def decode(base64_string: str) -> str:
     return string_bytes.decode("ascii")
 
 async def is_subscribed(client, user_id: int, channel_ids: list) -> bool:
-    """Check if user is subscribed to channels"""
+    """Check if user is subscribed to channels - FIXED VERSION"""
     if not channel_ids:
         return True
     
     for channel in channel_ids:
         try:
             channel_id = channel.get("channel_id")
-            if not channel_id:
+            channel_username = channel.get("channel_username")
+            
+            if not channel_id and not channel_username:
                 continue
-                
-            try:
-                # First try with channel ID
-                member = await client.get_chat_member(channel_id, user_id)
-                if member.status in ["kicked", "left", "restricted"]:
-                    return False
-            except (UserNotParticipant, PeerIdInvalid, ChannelInvalid):
-                # If channel ID fails, try with username
-                username = channel.get("channel_username")
-                if username:
+            
+            # Try different methods to check subscription
+            success = False
+            
+            # Method 1: Try with channel username first (most reliable)
+            if channel_username:
+                try:
+                    # Remove @ if present
+                    username = channel_username.lstrip('@')
+                    member = await client.get_chat_member(username, user_id)
+                    if member.status not in ["kicked", "left", "restricted"]:
+                        success = True
+                        continue  # User is subscribed to this channel
+                    else:
+                        return False  # User is not subscribed
+                except (UserNotParticipant, PeerIdInvalid, ChannelInvalid, ValueError) as e:
+                    logger.debug(f"Could not check via username {channel_username}: {e}")
+                    success = False
+                except Exception as e:
+                    logger.error(f"Error checking via username {channel_username}: {e}")
+                    success = False
+            
+            # Method 2: Try with channel ID
+            if not success and channel_id:
+                try:
+                    # Convert to proper format if needed
+                    if isinstance(channel_id, str):
+                        channel_id = int(channel_id)
+                    
+                    member = await client.get_chat_member(channel_id, user_id)
+                    if member.status not in ["kicked", "left", "restricted"]:
+                        success = True
+                        continue  # User is subscribed
+                    else:
+                        return False  # User is not subscribed
+                except (UserNotParticipant, PeerIdInvalid, ChannelInvalid, ValueError) as e:
+                    logger.debug(f"Could not check via channel ID {channel_id}: {e}")
+                    # Try to get channel info to create invite link
                     try:
-                        member = await client.get_chat_member(username, user_id)
-                        if member.status in ["kicked", "left", "restricted"]:
-                            return False
-                    except (UserNotParticipant, PeerIdInvalid, ChannelInvalid):
+                        chat = await client.get_chat(channel_id)
+                        if hasattr(chat, 'username') and chat.username:
+                            # Try with the username from chat info
+                            member = await client.get_chat_member(chat.username, user_id)
+                            if member.status not in ["kicked", "left", "restricted"]:
+                                success = True
+                                continue
+                            else:
+                                return False
+                    except Exception as e2:
+                        logger.error(f"Could not get channel info {channel_id}: {e2}")
                         return False
-                else:
+                except Exception as e:
+                    logger.error(f"Error checking via channel ID {channel_id}: {e}")
                     return False
-            except Exception as e:
-                logger.error(f"Error checking subscription for channel {channel_id}: {e}")
+            
+            # If both methods failed, user is not subscribed
+            if not success:
                 return False
                 
         except Exception as e:
-            logger.error(f"Error in is_subscribed: {e}")
+            logger.error(f"Error in is_subscribed for channel {channel}: {e}")
             return False
     
     return True
@@ -780,7 +856,7 @@ def validate_url(url: str) -> bool:
         return False
 
 # ===================================
-# SECTION 5: BOT CLASS WITH ENHANCED AUTO-DELETE
+# SECTION 5: BOT CLASS WITH ENHANCED AUTO-DELETE (FIXED)
 # ===================================
 
 class Bot(Client):
@@ -818,7 +894,51 @@ class Bot(Client):
         # Track user file history for resend capability
         self.user_file_history = {}
         
+        # Admin cache for faster access
+        self.admin_cache = set()
+        
         logger.info("✓ Bot instance created with enhanced auto-delete")
+    
+    async def is_user_admin(self, user_id: int) -> bool:
+        """Check if user is admin - FIXED VERSION"""
+        # Check cache first
+        if user_id in self.admin_cache:
+            return True
+        
+        # Check Config.ADMINS (includes owner)
+        if user_id in Config.ADMINS:
+            self.admin_cache.add(user_id)
+            return True
+        
+        # Check database
+        try:
+            is_admin = await self.db.is_admin(user_id)
+            if is_admin:
+                self.admin_cache.add(user_id)
+            return is_admin
+        except Exception as e:
+            logger.error(f"Error checking admin status for {user_id}: {e}")
+            
+            # Fallback to Config.ADMINS
+            return user_id in Config.ADMINS
+    
+    async def refresh_admin_cache(self):
+        """Refresh admin cache from database"""
+        try:
+            self.admin_cache.clear()
+            
+            # Add Config.ADMINS
+            for admin_id in Config.ADMINS:
+                self.admin_cache.add(admin_id)
+            
+            # Add database admins
+            db_admins = await self.db.get_admins()
+            for admin_id in db_admins:
+                self.admin_cache.add(admin_id)
+                
+            logger.info(f"✓ Admin cache refreshed: {len(self.admin_cache)} admins")
+        except Exception as e:
+            logger.error(f"Error refreshing admin cache: {e}")
     
     async def start_user_account(self):
         """Start user account for reactions"""
@@ -1001,11 +1121,11 @@ class Bot(Client):
         return False
     
     # ===================================
-    # BOT STARTUP METHODS
+    # BOT STARTUP METHODS (FIXED)
     # ===================================
     
     async def start(self):
-        """Start the bot"""
+        """Start the bot - FIXED VERSION"""
         await super().start()
         
         # Connect to database
@@ -1016,14 +1136,41 @@ class Bot(Client):
         # Start user account for reactions
         await self.start_user_account()
         
+        # Parse force subscribe channels from Config
+        Config.parse_force_sub_channels()
+        
         # Load settings
         self.settings = await self.db.get_settings()
-        self.force_sub_channels = await self.db.get_force_sub_channels()
+        
+        # Load force sub channels from database AND config
+        db_channels = await self.db.get_force_sub_channels()
+        config_channels = Config.FORCE_SUB_CHANNELS
+        
+        # Merge channels (avoid duplicates)
+        all_channels = {}
+        for channel in db_channels + config_channels:
+            channel_id = channel.get("channel_id")
+            if channel_id not in all_channels:
+                all_channels[channel_id] = channel
+        
+        self.force_sub_channels = list(all_channels.values())
+        
+        # Save merged channels back to database
+        await self.db.clear_force_sub_channels()
+        for channel in self.force_sub_channels:
+            await self.db.add_force_sub_channel(
+                channel.get("channel_id"),
+                channel.get("channel_username")
+            )
+        
         self.db_channel = await self.db.get_db_channel()
         
         # Initialize admins
         for admin_id in Config.ADMINS:
             await self.db.add_admin(admin_id)
+        
+        # Refresh admin cache
+        await self.refresh_admin_cache()
         
         # Set bot commands - FIXED METHOD
         await self.set_bot_commands()
@@ -1040,10 +1187,18 @@ class Bot(Client):
         Config.BOT_USERNAME = me.username
         logger.info(f"✓ Bot started as @{me.username}")
         logger.info(f"✓ Bot ID: {me.id}")
+        logger.info(f"✓ Force Sub Channels: {len(self.force_sub_channels)}")
         logger.info("✓ Enhanced auto-delete: Only deletes conversation messages")
         
         # Send startup message to owner
-        await self.send_log_message(f"✅ Bot started successfully!\n\n📊 **Enhanced Auto-Delete Active**\n• Only deletes conversation messages\n• Preserves file and instruction messages\n• Clean PM experience")
+        await self.send_log_message(
+            f"✅ Bot started successfully!\n\n"
+            f"📊 **Enhanced Auto-Delete Active**\n"
+            f"• Only deletes conversation messages\n"
+            f"• Preserves file and instruction messages\n"
+            f"• Clean PM experience\n\n"
+            f"📢 **Force Subscribe:** {len(self.force_sub_channels)} channels"
+        )
         
         return True
     
@@ -1079,7 +1234,7 @@ class Bot(Client):
             logger.error(f"Error setting bot commands: {e}")
     
     def register_all_handlers(self):
-        """Register ALL handlers in one place"""
+        """Register ALL handlers in one place - FIXED VERSION"""
         
         # === START COMMAND ===
         @self.on_message(filters.command("start") & filters.private)
@@ -1097,120 +1252,120 @@ class Bot(Client):
             await self.about_command(message)
         
         # === ADMIN MANAGEMENT COMMANDS ===
-        @self.on_message(filters.command("users") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("users") & filters.private)
         async def admin_list_handler(client, message):
             await self.admin_list_command(message)
         
-        @self.on_message(filters.command("add_admins") & filters.private & filters.user([Config.OWNER_ID]))
+        @self.on_message(filters.command("add_admins") & filters.private)
         async def add_admins_handler(client, message):
             await self.add_admins_command(message)
         
-        @self.on_message(filters.command("del_admins") & filters.private & filters.user([Config.OWNER_ID]))
+        @self.on_message(filters.command("del_admins") & filters.private)
         async def del_admins_handler(client, message):
             await self.del_admins_command(message)
         
-        @self.on_message(filters.command("banuser_list") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("banuser_list") & filters.private)
         async def banuser_list_handler(client, message):
             await self.banuser_list_command(message)
         
-        @self.on_message(filters.command("add_banuser") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("add_banuser") & filters.private)
         async def add_banuser_handler(client, message):
             await self.add_banuser_command(message)
         
-        @self.on_message(filters.command("del_banuser") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("del_banuser") & filters.private)
         async def del_banuser_handler(client, message):
             await self.del_banuser_command(message)
         
         # === BASIC ADMIN COMMANDS ===
-        @self.on_message(filters.command("admin_list") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("admin_list") & filters.private)
         async def users_handler(client, message):
             await self.users_command(message)
         
-        @self.on_message(filters.command("broadcast") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("broadcast") & filters.private)
         async def broadcast_handler(client, message):
             await self.broadcast_command(message)
         
-        @self.on_message(filters.command("ban") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("ban") & filters.private)
         async def ban_handler(client, message):
             await self.ban_command(message)
         
-        @self.on_message(filters.command("unban") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("unban") & filters.private)
         async def unban_handler(client, message):
             await self.unban_command(message)
         
-        @self.on_message(filters.command("stats") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("stats") & filters.private)
         async def stats_handler(client, message):
             await self.stats_command(message)
         
-        @self.on_message(filters.command("logs") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("logs") & filters.private)
         async def logs_handler(client, message):
             await self.logs_command(message)
         
-        @self.on_message(filters.command("cmd") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("cmd") & filters.private)
         async def cmd_handler(client, message):
             await self.cmd_command(message)
         
         # === FILE MANAGEMENT COMMANDS ===
-        @self.on_message(filters.command("genlink") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("genlink") & filters.private)
         async def genlink_handler(client, message):
             await self.genlink_command(message)
         
-        @self.on_message(filters.command("batch") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("batch") & filters.private)
         async def batch_handler(client, message):
             await self.batch_command(message)
         
-        @self.on_message(filters.command("custom_batch") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("custom_batch") & filters.private)
         async def custom_batch_handler(client, message):
             await self.custom_batch_command(message)
         
-        @self.on_message(filters.command("special_link") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("special_link") & filters.private)
         async def special_link_handler(client, message):
             await self.special_link_command(message)
         
-        @self.on_message(filters.command("getlink") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("getlink") & filters.private)
         async def getlink_handler(client, message):
             await self.getlink_command(message)
         
         # === CHANNEL MANAGEMENT COMMANDS ===
-        @self.on_message(filters.command("setchannel") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("setchannel") & filters.private)
         async def setchannel_handler(client, message):
             await self.setchannel_command(message)
         
-        @self.on_message(filters.command("checkchannel") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("checkchannel") & filters.private)
         async def checkchannel_handler(client, message):
             await self.checkchannel_command(message)
         
-        @self.on_message(filters.command("removechannel") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("removechannel") & filters.private)
         async def removechannel_handler(client, message):
             await self.removechannel_command(message)
         
         # === SETTINGS COMMANDS ===
-        @self.on_message(filters.command("settings") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("settings") & filters.private)
         async def settings_handler(client, message):
             await self.settings_command(message)
         
-        @self.on_message(filters.command("files") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("files") & filters.private)
         async def files_handler(client, message):
             await self.files_command(message)
         
-        @self.on_message(filters.command("auto_del") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("auto_del") & filters.private)
         async def auto_del_handler(client, message):
             await self.auto_del_command(message)
         
-        @self.on_message(filters.command("forcesub") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("forcesub") & filters.private)
         async def forcesub_handler(client, message):
             await self.forcesub_command(message)
         
-        @self.on_message(filters.command("req_fsub") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("req_fsub") & filters.private)
         async def req_fsub_handler(client, message):
             await self.req_fsub_command(message)
         
-        @self.on_message(filters.command("botsettings") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("botsettings") & filters.private)
         async def botsettings_handler(client, message):
             await self.botsettings_command(message)
         
         # === UTILITY COMMANDS ===
-        @self.on_message(filters.command("shortener") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("shortener") & filters.private)
         async def shortener_handler(client, message):
             await self.shortener_command(message)
         
@@ -1218,34 +1373,34 @@ class Bot(Client):
         async def ping_handler(client, message):
             await self.ping_command(message)
         
-        @self.on_message(filters.command("font") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("font") & filters.private)
         async def font_handler(client, message):
             await self.font_command(message)
         
-        @self.on_message(filters.command("refresh") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("refresh") & filters.private)
         async def refresh_handler(client, message):
             await self.refresh_command(message)
         
         # === FORCE SUBSCRIBE COMMANDS ===
-        @self.on_message(filters.command("fsub_chnl") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("fsub_chnl") & filters.private)
         async def fsub_chnl_handler(client, message):
             await self.fsub_chnl_command(message)
         
-        @self.on_message(filters.command("add_fsub") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("add_fsub") & filters.private)
         async def add_fsub_handler(client, message):
             await self.add_fsub_command(message)
         
-        @self.on_message(filters.command("del_fsub") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("del_fsub") & filters.private)
         async def del_fsub_handler(client, message):
             await self.del_fsub_command(message)
         
         # === DONE COMMAND ===
-        @self.on_message(filters.command("done") & filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.command("done") & filters.private)
         async def done_handler(client, message):
             await self.done_command(message)
         
         # === TEXT MESSAGE HANDLERS ===
-        @self.on_message(filters.private & filters.user(Config.ADMINS))
+        @self.on_message(filters.private)
         async def text_handler(client, message):
             await self.text_message_handler(message)
         
@@ -1480,11 +1635,11 @@ class Bot(Client):
             return None
 
     # ===================================
-    # SECTION 6: START COMMAND (UPDATED)
+    # SECTION 6: START COMMAND (UPDATED - FIXED)
     # ===================================
     
     async def start_command(self, message: Message):
-        """Handle /start command"""
+        """Handle /start command - FIXED VERSION"""
         user_id = message.from_user.id
         chat_id = message.chat.id
 
@@ -1521,8 +1676,11 @@ class Bot(Client):
             await self.handle_start_argument(message, start_arg)
             return
 
-        # Check force subscribe
-        if self.force_sub_channels:
+        # Check force subscribe - ONLY if request_fsub is enabled
+        settings = await self.db.get_settings()
+        request_fsub = settings.get("request_fsub", False)
+        
+        if request_fsub and self.force_sub_channels:
             user_is_subscribed = await is_subscribed(self, user_id, self.force_sub_channels)
             if not user_is_subscribed:
                 await self.show_force_subscribe(message)
@@ -1840,11 +1998,17 @@ class Bot(Client):
         await self.store_bot_message(message.from_user.id, response.id, "instruction")
     
     # ===================================
-    # SECTION 9: ADMIN MANAGEMENT COMMANDS
+    # SECTION 9: ADMIN MANAGEMENT COMMANDS (FIXED)
     # ===================================
     
     async def admin_list_command(self, message: Message):
-        """Handle /admin_list command"""
+        """Handle /admin_list command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -1891,7 +2055,13 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def add_admins_command(self, message: Message):
-        """Handle /add_admins command"""
+        """Handle /add_admins command - FIXED VERSION"""
+        # Check if user is owner
+        if message.from_user.id != Config.OWNER_ID:
+            response = await message.reply("❌ Owner only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -1955,7 +2125,13 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def del_admins_command(self, message: Message):
-        """Handle /del_admins command"""
+        """Handle /del_admins command - FIXED VERSION"""
+        # Check if user is owner
+        if message.from_user.id != Config.OWNER_ID:
+            response = await message.reply("❌ Owner only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -2017,7 +2193,13 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def banuser_list_command(self, message: Message):
-        """Handle /banuser_list command"""
+        """Handle /banuser_list command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -2066,7 +2248,13 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def add_banuser_command(self, message: Message):
-        """Handle /add_banuser command"""
+        """Handle /add_banuser command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -2140,7 +2328,13 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def del_banuser_command(self, message: Message):
-        """Handle /del_banuser command"""
+        """Handle /del_banuser command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -2207,11 +2401,17 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     # ===================================
-    # SECTION 10: OTHER COMMANDS (UPDATED)
+    # SECTION 10: OTHER COMMANDS (UPDATED - FIXED)
     # ===================================
     
     async def users_command(self, message: Message):
-        """Handle /users command"""
+        """Handle /users command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -2272,7 +2472,13 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def stats_command(self, message: Message):
-        """Handle /stats command"""
+        """Handle /stats command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -2350,7 +2556,13 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def broadcast_command(self, message: Message):
-        """Handle /broadcast command"""
+        """Handle /broadcast command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -2419,7 +2631,13 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def ban_command(self, message: Message):
-        """Handle /ban command"""
+        """Handle /ban command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -2480,7 +2698,13 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def unban_command(self, message: Message):
-        """Handle /unban command"""
+        """Handle /unban command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -2536,7 +2760,13 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def logs_command(self, message: Message):
-        """Handle /logs command"""
+        """Handle /logs command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -2576,12 +2806,12 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     # ===================================
-    # SECTION 11: FILE MANAGEMENT COMMANDS
+    # SECTION 11: FILE MANAGEMENT COMMANDS (FIXED)
     # ===================================
     
     async def getlink_command(self, message: Message):
-        """Handle /getlink command"""
-        if not await self.db.is_admin(message.from_user.id):
+        """Handle /getlink command - FIXED VERSION"""
+        if not await self.is_user_admin(message.from_user.id):
             response = await message.reply("❌ Admin only!")
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
             return
@@ -2605,8 +2835,8 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def genlink_command(self, message: Message):
-        """Handle /genlink command"""
-        if not await self.db.is_admin(message.from_user.id):
+        """Handle /genlink command - FIXED VERSION"""
+        if not await self.is_user_admin(message.from_user.id):
             response = await message.reply("❌ Admin only!")
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
             return
@@ -2657,11 +2887,17 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     # ===================================
-    # SECTION 12: SETTINGS COMMANDS (UPDATED)
+    # SECTION 12: SETTINGS COMMANDS (UPDATED - FIXED)
     # ===================================
     
     async def settings_command(self, message: Message):
-        """Handle /settings command"""
+        """Handle /settings command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -2725,7 +2961,13 @@ class Bot(Client):
         await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def files_command(self, message: Message):
-        """Handle /files command"""
+        """Handle /files command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -2798,7 +3040,13 @@ class Bot(Client):
         await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def auto_del_command(self, message: Message):
-        """Handle /auto_del command"""
+        """Handle /auto_del command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+    
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -2869,7 +3117,13 @@ class Bot(Client):
         await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def req_fsub_command(self, message: Message):
-        """Handle /req_fsub command"""
+        """Handle /req_fsub command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
@@ -2930,9 +3184,9 @@ class Bot(Client):
         await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def botsettings_command(self, message: Message):
-        """Handle /botsettings command - Enhanced auto-delete info"""
-        # FIXED: Check admin permissions properly
-        if not await self.db.is_admin(message.from_user.id):
+        """Handle /botsettings command - Enhanced auto-delete info - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
             response = await message.reply("❌ Admin only!")
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
             return
@@ -3016,13 +3270,29 @@ class Bot(Client):
         await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     # ===================================
-    # SECTION 13: CALLBACK HANDLERS (FIXED)
+    # SECTION 13: CALLBACK HANDLERS (FIXED - COMPLETE)
     # ===================================
     
     async def handle_callback_query(self, query: CallbackQuery):
-        """Handle all callback queries"""
+        """Handle all callback queries - FIXED VERSION"""
         try:
             data = query.data
+            
+            # Check admin status for admin-only callbacks
+            admin_callbacks = [
+                "admin_panel", "settings_menu", "files_settings", "auto_delete_settings",
+                "force_sub_settings", "bot_msg_settings", "fsub_chnl_menu", "add_fsub_menu",
+                "del_fsub_menu", "refresh_fsub", "test_fsub", "reqfsub_on", "reqfsub_off",
+                "users_menu", "stats_menu", "admin_list_menu", "refresh_users", "refresh_stats",
+                "refresh_autodel", "toggle_protect_content", "toggle_hide_caption", "toggle_channel_button",
+                "toggle_auto_delete", "toggle_auto_delete_bot", "custom_buttons_menu", "custom_texts_menu",
+                "more_stats"
+            ]
+            
+            if data in admin_callbacks:
+                if not await self.is_user_admin(query.from_user.id):
+                    await query.answer("Admin only!", show_alert=True)
+                    return
             
             # Navigation callbacks
             if data == "start_menu":
@@ -3055,15 +3325,23 @@ class Bot(Client):
             
             elif data == "force_sub_settings":
                 await query.answer()
-                await self.req_fsub_command(query.message)
+                await self.forcesub_command(query.message)
             
             elif data == "bot_msg_settings":
                 await query.answer()
                 await self.botsettings_command(query.message)
             
-            elif data == "fsub_chnl_menu":  # FIXED: Added this handler
+            elif data == "fsub_chnl_menu":
                 await query.answer()
                 await self.fsub_chnl_command(query.message)
+            
+            elif data == "add_fsub_menu":
+                await query.answer()
+                await self.add_fsub_menu(query.message)
+            
+            elif data == "del_fsub_menu":
+                await query.answer()
+                await self.del_fsub_menu(query.message)
             
             elif data == "users_menu":
                 await query.answer()
@@ -3076,6 +3354,23 @@ class Bot(Client):
             elif data == "admin_list_menu":
                 await query.answer()
                 await self.admin_list_command(query.message)
+            
+            # Force Subscribe callbacks
+            elif data == "reqfsub_on":
+                await query.answer()
+                await self.handle_reqfsub_on(query)
+            
+            elif data == "reqfsub_off":
+                await query.answer()
+                await self.handle_reqfsub_off(query)
+            
+            elif data == "refresh_fsub":
+                await query.answer("Refreshing...")
+                await self.forcesub_command(query.message)
+            
+            elif data == "test_fsub":
+                await query.answer("Testing force subscribe...")
+                await self.test_force_sub(query)
             
             # Resend files callback
             elif data == "resend_files":
@@ -3091,11 +3386,6 @@ class Bot(Client):
             elif data.startswith("autodel_"):
                 await query.answer()
                 await self.handle_autodel_callback(query)
-            
-            # Force sub callbacks
-            elif data.startswith("reqfsub_"):
-                await query.answer()
-                await self.handle_reqfsub_callback(query)
             
             # Bot message time callbacks
             elif data.startswith("botmsg_time_"):
@@ -3282,7 +3572,7 @@ class Bot(Client):
             await query.answer("Error resending files!", show_alert=True)
     
     # ===================================
-    # SECTION 14: UTILITY COMMANDS
+    # SECTION 14: UTILITY COMMANDS (FIXED)
     # ===================================
     
     async def ping_command(self, message: Message):
@@ -3307,8 +3597,8 @@ class Bot(Client):
         await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def refresh_command(self, message: Message):
-        """Handle /refresh command"""
-        if not await self.db.is_admin(message.from_user.id):
+        """Handle /refresh command - FIXED VERSION"""
+        if not await self.is_user_admin(message.from_user.id):
             response = await message.reply("❌ Admin only!")
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
             return
@@ -3336,13 +3626,19 @@ class Bot(Client):
         await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def cmd_command(self, message: Message):
-        """Handle /cmd command"""
+        """Handle /cmd command - FIXED VERSION"""
+        # Check admin permission
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
         settings = await self.db.get_settings()
         if settings.get("auto_delete_bot_messages", True):
             await self.delete_previous_message(message.from_user.id)
         
         # Check if user is admin
-        is_admin = await self.db.is_admin(message.from_user.id)
+        is_admin = await self.is_user_admin(message.from_user.id)
         
         # Get cmd picture
         settings_data = await self.db.get_settings()
@@ -3418,12 +3714,105 @@ class Bot(Client):
         await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     # ===================================
-    # SECTION 15: FORCE SUBSCRIBE COMMANDS
+    # SECTION 15: FORCE SUBSCRIBE COMMANDS (FIXED - COMPLETE)
     # ===================================
+    
+    async def forcesub_command(self, message: Message):
+        """Handle /forcesub command - FIXED VERSION"""
+        # Check admin permission using new method
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
+        settings = await self.db.get_settings()
+        if settings.get("auto_delete_bot_messages", True):
+            await self.delete_previous_message(message.from_user.id)
+        
+        # Get current force sub channels
+        force_sub_channels = await self.db.get_force_sub_channels()
+        
+        # Get force sub pictures
+        force_sub_pics = settings.get("force_sub_pics", Config.FORCE_SUB_PICS)
+        force_sub_pic = get_random_pic(force_sub_pics)
+        
+        # Check request_fsub setting
+        request_fsub = settings.get("request_fsub", False)
+        request_status = "✅ ENABLED" if request_fsub else "❌ DISABLED"
+        
+        # Format message
+        if force_sub_channels:
+            channels_text = "<b>📢 FORCE SUBSCRIBE SETTINGS</b>\n\n"
+            channels_text += f"🔄 Request FSub: {request_status}\n\n"
+            channels_text += "<b>Current Channels:</b>\n"
+            
+            for i, channel in enumerate(force_sub_channels, 1):
+                channel_id = channel.get("channel_id")
+                username = channel.get("channel_username", "No username")
+                
+                channels_text += f"{i}. Channel ID: <code>{channel_id}</code>\n"
+                channels_text += f"   Username: @{username}\n\n"
+            
+            channels_text += f"📊 Total Channels: {len(force_sub_channels)}"
+        else:
+            channels_text = "<b>📢 FORCE SUBSCRIBE SETTINGS</b>\n\n"
+            channels_text += f"🔄 Request FSub: {request_status}\n\n"
+            channels_text += "No force subscribe channels configured.\n"
+            channels_text += "Use /add_fsub to add channels."
+        
+        # Create buttons
+        buttons = []
+        
+        # Toggle Request FSub
+        if request_fsub:
+            buttons.append([
+                InlineKeyboardButton("❌ DISABLE FSUB", callback_data="reqfsub_off"),
+                InlineKeyboardButton("⚙️ CHANNELS", callback_data="fsub_chnl_menu")
+            ])
+        else:
+            buttons.append([
+                InlineKeyboardButton("✅ ENABLE FSUB", callback_data="reqfsub_on"),
+                InlineKeyboardButton("⚙️ CHANNELS", callback_data="fsub_chnl_menu")
+            ])
+        
+        # Management buttons
+        buttons.append([
+            InlineKeyboardButton("➕ ADD CHANNEL", callback_data="add_fsub_menu"),
+            InlineKeyboardButton("➖ REMOVE CHANNEL", callback_data="del_fsub_menu")
+        ])
+        
+        buttons.append([
+            InlineKeyboardButton("🔄 REFRESH", callback_data="refresh_fsub"),
+            InlineKeyboardButton("📊 TEST", callback_data="test_fsub")
+        ])
+        
+        buttons.append([
+            InlineKeyboardButton("🔙 BACK", callback_data="settings_menu"),
+            InlineKeyboardButton("❌ CLOSE", callback_data="close")
+        ])
+        
+        keyboard = InlineKeyboardMarkup(buttons)
+        
+        try:
+            response = await message.reply_photo(
+                photo=force_sub_pic,
+                caption=channels_text,
+                reply_markup=keyboard,
+                parse_mode=enums.ParseMode.HTML
+            )
+        except Exception as e:
+            logger.error(f"Error sending forcesub photo: {e}")
+            response = await message.reply(
+                channels_text,
+                reply_markup=keyboard,
+                parse_mode=enums.ParseMode.HTML
+            )
+        
+        await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def fsub_chnl_command(self, message: Message):
         """Handle /fsub_chnl command - Fixed version"""
-        if not await self.db.is_admin(message.from_user.id):
+        if not await self.is_user_admin(message.from_user.id):
             response = await message.reply("❌ Admin only!")
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
             return
@@ -3497,9 +3886,165 @@ class Bot(Client):
         
         await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
+    async def add_fsub_menu(self, message: Message):
+        """Show add force sub channel menu"""
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
+        settings = await self.db.get_settings()
+        if settings.get("auto_delete_bot_messages", True):
+            await self.delete_previous_message(message.from_user.id)
+        
+        help_text = (
+            "➕ <b>ADD FORCE SUB CHANNEL</b>\n\n"
+            "To add a force subscribe channel:\n\n"
+            "1. <b>For Public Channels:</b>\n"
+            "   <code>/add_fsub -100123456789 @username</code>\n\n"
+            "2. <b>For Private Channels:</b>\n"
+            "   <code>/add_fsub -100123456789</code>\n\n"
+            "📝 <b>How to get Channel ID:</b>\n"
+            "• Add @RawDataBot to your channel\n"
+            "• Send any message\n"
+            "• Copy the chat_id (it will be negative)\n\n"
+            "⚠️ <b>Important:</b>\n"
+            "• Bot must be admin in the channel\n"
+            "• Channel ID must start with -100"
+        )
+        
+        buttons = [
+            [InlineKeyboardButton("🔙 BACK", callback_data="force_sub_settings")],
+            [InlineKeyboardButton("❌ CLOSE", callback_data="close")]
+        ]
+        
+        keyboard = InlineKeyboardMarkup(buttons)
+        
+        response = await message.reply(
+            help_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+        
+        await self.store_bot_message(message.from_user.id, response.id, "conversation")
+
+    async def del_fsub_menu(self, message: Message):
+        """Show delete force sub channel menu"""
+        if not await self.is_user_admin(message.from_user.id):
+            response = await message.reply("❌ Admin only!")
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
+        settings = await self.db.get_settings()
+        if settings.get("auto_delete_bot_messages", True):
+            await self.delete_previous_message(message.from_user.id)
+        
+        # Get current channels
+        force_sub_channels = await self.db.get_force_sub_channels()
+        
+        if not force_sub_channels:
+            response = await message.reply(
+                "❌ No force subscribe channels to remove!",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔙 BACK", callback_data="force_sub_settings")]
+                ])
+            )
+            await self.store_bot_message(message.from_user.id, response.id, "conversation")
+            return
+        
+        # Create buttons for each channel
+        buttons = []
+        for channel in force_sub_channels:
+            channel_id = channel.get("channel_id")
+            username = channel.get("channel_username", "No username")
+            
+            button_text = f"Remove: {channel_id}"
+            if username != "No username":
+                button_text = f"Remove: @{username}"
+            
+            buttons.append([
+                InlineKeyboardButton(button_text, callback_data=f"remove_channel_{channel_id}")
+            ])
+        
+        buttons.append([
+            InlineKeyboardButton("🔙 BACK", callback_data="force_sub_settings"),
+            InlineKeyboardButton("❌ CLOSE", callback_data="close")
+        ])
+        
+        keyboard = InlineKeyboardMarkup(buttons)
+        
+        response = await message.reply(
+            "🗑️ <b>SELECT CHANNEL TO REMOVE</b>\n\n"
+            f"Total channels: {len(force_sub_channels)}",
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+        
+        await self.store_bot_message(message.from_user.id, response.id, "conversation")
+
+    async def handle_reqfsub_on(self, query: CallbackQuery):
+        """Enable request force subscribe"""
+        await self.db.update_setting("request_fsub", True)
+        self.settings["request_fsub"] = True
+        
+        await query.answer("✅ Request FSub Enabled!")
+        
+        # Refresh the page
+        await self.forcesub_command(query.message)
+
+    async def handle_reqfsub_off(self, query: CallbackQuery):
+        """Disable request force subscribe"""
+        await self.db.update_setting("request_fsub", False)
+        self.settings["request_fsub"] = False
+        
+        await query.answer("❌ Request FSub Disabled!")
+        
+        # Refresh the page
+        await self.forcesub_command(query.message)
+
+    async def test_force_sub(self, query: CallbackQuery):
+        """Test force subscribe functionality"""
+        user_id = query.from_user.id
+        
+        # Get force sub channels
+        force_sub_channels = await self.db.get_force_sub_channels()
+        
+        if not force_sub_channels:
+            await query.answer("❌ No force subscribe channels configured!", show_alert=True)
+            return
+        
+        # Check subscription status
+        is_subscribed = await is_subscribed(self, user_id, force_sub_channels)
+        
+        if is_subscribed:
+            await query.answer("✅ You are subscribed to all channels!", show_alert=True)
+        else:
+            # Show which channels are missing
+            missing_channels = []
+            for channel in force_sub_channels:
+                channel_id = channel.get("channel_id")
+                username = channel.get("channel_username", f"Channel {channel_id}")
+                
+                try:
+                    # Check this specific channel
+                    channel_check = await is_subscribed(self, user_id, [channel])
+                    if not channel_check:
+                        missing_channels.append(username)
+                except:
+                    missing_channels.append(username)
+            
+            message = f"❌ You need to join {len(missing_channels)} channel(s):\n"
+            for channel in missing_channels[:5]:  # Show max 5
+                message += f"• @{channel}\n"
+            
+            if len(missing_channels) > 5:
+                message += f"... and {len(missing_channels) - 5} more"
+            
+            await query.answer(message, show_alert=True)
+    
     async def add_fsub_command(self, message: Message):
-        """Handle /add_fsub command"""
-        if not await self.db.is_admin(message.from_user.id):
+        """Handle /add_fsub command - FIXED VERSION"""
+        if not await self.is_user_admin(message.from_user.id):
             response = await message.reply("❌ Admin only!")
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
             return
@@ -3551,8 +4096,8 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     async def del_fsub_command(self, message: Message):
-        """Handle /del_fsub command"""
-        if not await self.db.is_admin(message.from_user.id):
+        """Handle /del_fsub command - FIXED VERSION"""
+        if not await self.is_user_admin(message.from_user.id):
             response = await message.reply("❌ Admin only!")
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
             return
@@ -3598,7 +4143,7 @@ class Bot(Client):
             await self.store_bot_message(message.from_user.id, response.id, "conversation")
     
     # ===================================
-    # SECTION 16: JOIN REQUEST HANDLER
+    # SECTION 16: JOIN REQUEST HANDLER (FIXED)
     # ===================================
     
     async def handle_join_request(self, join_request: ChatJoinRequest):
@@ -3656,13 +4201,13 @@ class Bot(Client):
             logger.error(f"Error handling join request: {e}")
 
     # ===================================
-    # SECTION 17: ADDITIONAL COMMAND HANDLERS
+    # SECTION 17: ADDITIONAL COMMAND HANDLERS (FIXED)
     # ===================================
     
     async def text_message_handler(self, message: Message):
         """Handle text messages from admins"""
         # Check if user is admin
-        if not await self.db.is_admin(message.from_user.id):
+        if not await self.is_user_admin(message.from_user.id):
             return
         
         # Check if message is a reply
@@ -4016,11 +4561,11 @@ async def start_web_server():
         await asyncio.sleep(3600)
 
 # ===================================
-# SECTION 19: MAIN FUNCTION
+# SECTION 19: MAIN FUNCTION (FIXED)
 # ===================================
 
 async def main():
-    """Main function to start the bot"""
+    """Main function to start the bot - FIXED VERSION"""
     print(BANNER)
     logger.info("🚀 Starting File Sharing Bot with Enhanced Auto-Delete...")
     
@@ -4028,6 +4573,9 @@ async def main():
     if not Config.validate():
         logger.error("Configuration validation failed. Exiting.")
         return
+    
+    # Parse force subscribe channels
+    Config.parse_force_sub_channels()
     
     # Print configuration
     Config.print_config()
@@ -4049,6 +4597,7 @@ async def main():
         logger.info("✅ Preserves file messages")
         logger.info("✅ Preserves instruction messages")
         logger.info("✅ Clean PM experience")
+        logger.info(f"✅ Force Subscribe Channels: {len(bot.force_sub_channels)}")
         
         # Start web server if enabled
         if Config.WEB_SERVER:
