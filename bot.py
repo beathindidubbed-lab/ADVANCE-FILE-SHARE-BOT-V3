@@ -1308,15 +1308,15 @@ class Bot(Client):
         except Exception as e:
             logger.error(f"Error creating invite link for channel {channel_id}: {e}")
             return None
-    """
+    
     # ===================================
     # SECTION 6: START COMMAND (WITH PHOTO)
-    # ==================================="""
+    # ===================================
       
     async def start_command(self, message: Message):
         """Handle /start command with auto-delete - FIXED"""
-            user_id = message.from_user.id
-            chat_id = message.chat.id
+        user_id = message.from_user.id
+        chat_id = message.chat.id
     
         # Delete previous bot message if auto-delete is enabled
         settings = await self.db.get_settings()
