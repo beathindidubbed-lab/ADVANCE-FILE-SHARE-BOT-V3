@@ -6392,19 +6392,17 @@ async def start_web_server():
         await asyncio.sleep(3600)
 
 # ===================================
-# SECTION 7: MAIN FUNCTION
+# SECTION 19: MAIN FUNCTION (FIXED & WORKING)
 # ===================================
 
 async def main():
-    """Main function to start the bot"""
+    """Main function to start the bot - FIXED VERSION"""
     print(BANNER)
-    logger.info("=" * 80)
-    logger.info("🚀 Starting Telegram File Sharing Bot with THREE Auto-Delete Features...")
-    logger.info("=" * 80)
+    logger.info("🚀 Starting File Sharing Bot with Enhanced Auto-Delete...")
     
     # Validate configuration
     if not Config.validate():
-        logger.error("❌ Configuration validation failed. Exiting.")
+        logger.error("Configuration validation failed. Exiting.")
         return
     
     # Parse force subscribe channels
@@ -6416,31 +6414,31 @@ async def main():
     # Create bot instance
     bot = Bot()
     
+    # Declare web server task variable
+    web_server_task = None
+    
     try:
         # Start the bot
         if not await bot.start():
-            logger.error("❌ Failed to start bot. Exiting.")
+            logger.error("Failed to start bot. Exiting.")
             return
         
         # Set up callback handler
         await bot.setup_callbacks()
         
-        logger.info("=" * 80)
-        logger.info("✅ Bot is now running with THREE AUTO-DELETE FEATURES!")
-        logger.info("=" * 80)
-        logger.info("FEATURE 1: Clean Conversation - Deletes previous bot message")
-        logger.info("FEATURE 2: Auto Delete Files - Deletes files after timer")
-        logger.info("FEATURE 3: Show Instruction - Shows resend button after deletion")
-        logger.info("=" * 80)
+        logger.info("✅ Bot is now running with Enhanced Auto-Delete!")
+        logger.info("✅ Only deletes conversation messages")
+        logger.info("✅ Preserves file messages")
+        logger.info("✅ Preserves instruction messages")
+        logger.info("✅ Clean PM experience")
         logger.info(f"✅ Force Subscribe Channels: {len(bot.force_sub_channels)}")
         logger.info(f"✅ Database Channel: {'Set' if bot.db_channel else 'Not set'}")
         logger.info(f"✅ Admins: {len(Config.ADMINS)} users")
-        logger.info("=" * 80)
         
         # Start web server if enabled
-        web_server_task = None
         if Config.WEB_SERVER:
             web_server_task = asyncio.create_task(start_web_server())
+            logger.info(f"✅ Web server started on port {Config.PORT}")
         
         # Keep the bot running
         await asyncio.Event().wait()
@@ -6448,52 +6446,24 @@ async def main():
     except KeyboardInterrupt:
         logger.info("👋 Received stop signal, shutting down...")
     except Exception as e:
-        logger.error(f"❌ Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}")
         traceback.print_exc()
     finally:
         # Stop the bot
         logger.info("🛑 Stopping bot...")
         await bot.stop()
         
-        if Config.WEB_SERVER and web_server_task:
+        # Cancel web server task if it exists
+        if web_server_task and not web_server_task.done():
             web_server_task.cancel()
             try:
                 await web_server_task
             except asyncio.CancelledError:
                 pass
+            logger.info("✅ Web server stopped")
         
         logger.info("👋 Bot stopped successfully.")
-        logger.info("=" * 80)
-
-# ===================================
-# SECTION 8: SETUP CALLBACKS METHOD
-# ===================================
-
-    async def setup_callbacks(self):
-        """
-        Setup callback query handlers
-        
-        This method is called after bot starts to handle all callback queries
-        """
-        # Callback handler is already registered in register_all_handlers
-        # This method is for any additional callback setup if needed
-        logger.info("✓ Callback handlers setup complete")
-
-# ===================================
-# RUN THE BOT
-# ===================================
 
 if __name__ == "__main__":
     # Run the bot
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("Bot stopped by user")
-    except Exception as e:
-        logger.error(f"Fatal error: {e}")
-        traceback.print_exc()
-
-        
-                                
-
-   
+    asyncio.run(main())
