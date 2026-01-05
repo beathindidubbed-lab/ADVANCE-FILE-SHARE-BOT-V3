@@ -713,28 +713,28 @@ class Database:
             logger.error(f"Error removing force subchannel {channel_id}: {e}")
             return False
     async def get_force_sub_channels(self):
-    """Get all force subscribe channels"""
-    try:
-        cursor = self.force_sub.find({})
-        channels = []
-        async for doc in cursor:
-            channels.append({
-                "channel_id": doc["channel_id"],
-                "channel_username": doc.get("channel_username")
-            })
-        return channels
-    except Exception as e:
-        logger.error(f"Error getting force sub channels: {e}")
-        return []
+        """Get all force subscribe channels"""
+        try:
+            cursor = self.force_sub.find({})
+            channels = []
+            async for doc in cursor:
+                channels.append({
+                    "channel_id": doc["channel_id"],
+                    "channel_username": doc.get("channel_username")
+                })
+            return channels
+        except Exception as e:
+            logger.error(f"Error getting force sub channels: {e}")
+            return []
 
-async def clear_force_sub_channels(self):
-    """Clear all force subscribe channels"""
-    try:
-        await self.force_sub.delete_many({})
-        return True
-    except Exception as e:
-        logger.error(f"Error clearing force sub channels: {e}")
-        return False
+    async def clear_force_sub_channels(self):
+        """Clear all force subscribe channels"""
+        try:
+            await self.force_sub.delete_many({})
+            return True
+        except Exception as e:
+            logger.error(f"Error clearing force sub channels: {e}")
+            return False
 
 # ===================================
 # ADMIN OPERATIONS (VERIFIED & FIXED)
