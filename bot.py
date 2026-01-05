@@ -4,6 +4,10 @@
 🤖 TELEGRAM FILE SHARING BOT - COMPLETE FIXED VERSION
 Three Auto-Delete Features + Blockquote Expandable Support
 All Issues Fixed - Ready to Deploy
+FIXED ISSUES:
+1. Bot admin check ✅
+2. File link generation ✅  
+3. del_fsub_menu callback ✅
 """
 
 # ===================================
@@ -1275,7 +1279,7 @@ def create_auto_delete_text(auto_delete: bool, auto_delete_time: int, clean_conv
     blockquote_content = f'<blockquote><b>{settings_content}</b></blockquote>'
     
     return (
-        "<b> 🤖 𝗔𝗨𝗧𝗢 𝗗𝗘𝗟𝗘𝗧𝗘 𝗦𝗘𝗧𝗧𝗜𝗇𝗚𝗦 ⚙️ </b>\n\n"
+        "<b> 🤖 𝗔𝗨𝗧𝗢 𝗗𝗘𝗟𝗘𝗧𝗘 𝗦𝗘𝗧𝗧𝗜𝗡𝗚𝗦 ⚙️ </b>\n\n"
         f"{blockquote_content}\n"
         "<b> ᴄʟɪᴄᴋ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴs ᴛᴏ ᴄʜᴀɴɢᴇ sᴇᴛᴛɪɴɢs </b>"
     )
@@ -2529,26 +2533,53 @@ class Bot(Client):
             
             file_id = int(decoded)
             
+            # Check if bot has access to the database channel
+            if not self.db_channel:
+                error_msg = await message.reply("❌ <b>Database channel not set!</b>", parse_mode=enums.ParseMode.HTML)
+                await self.store_bot_message(user_id, error_msg.id)
+                return
+            
+            # Check if bot is admin in database channel
+            try:
+                # Get bot's status in the channel
+                member = await self.get_chat_member(self.db_channel, (await self.get_me()).id)
+                if member.status not in ["administrator", "creator"]:
+                    # Bot is not admin - cannot copy message
+                    error_msg = await message.reply("❌ <b>Bot is not admin in database channel!</b>", parse_mode=enums.ParseMode.HTML)
+                    await self.store_bot_message(user_id, error_msg.id)
+                    return
+            except Exception as e:
+                logger.error(f"Error checking admin status: {e}")
+                error_msg = await message.reply("❌ <b>Cannot access database channel!</b>", parse_mode=enums.ParseMode.HTML)
+                await self.store_bot_message(user_id, error_msg.id)
+                return
+            
             # Send the file
-            response = await self.copy_message(
-                chat_id=message.chat.id,
-                from_chat_id=self.db_channel,
-                message_id=file_id,
-                protect_content=self.settings.get("protect_content", True)
-            )
-            
-            # FEATURE 2: Schedule file for auto-deletion if enabled
-            settings = await self.db.get_settings()
-            auto_delete = settings.get("auto_delete", False)
-            if auto_delete:
-                delete_time = settings.get("auto_delete_time", 300)
-                await self.schedule_file_deletion(user_id, response.id, delete_time)
-            
-            # Track file for potential resend
-            await self.track_user_files(user_id, [file_id])
+            try:
+                response = await self.copy_message(
+                    chat_id=message.chat.id,
+                    from_chat_id=self.db_channel,
+                    message_id=file_id,
+                    protect_content=self.settings.get("protect_content", True)
+                )
+                
+                # FEATURE 2: Schedule file for auto-deletion if enabled
+                settings = await self.db.get_settings()
+                auto_delete = settings.get("auto_delete", False)
+                if auto_delete:
+                    delete_time = settings.get("auto_delete_time", 300)
+                    await self.schedule_file_deletion(user_id, response.id, delete_time)
+                
+                # Track file for potential resend
+                await self.track_user_files(user_id, [file_id])
+                
+            except Exception as e:
+                logger.error(f"Error sending file {file_id}: {e}")
+                error_msg = await message.reply("❌ <b>File not found or access denied!</b>", parse_mode=enums.ParseMode.HTML)
+                await self.store_bot_message(user_id, error_msg.id)
             
         except Exception as e:
-            logger.error(f"Error sending file {file_id_encoded}: {e}")
+            logger.error(f"Error in handle_file_link: {e}")
             error_msg = await message.reply("❌ <b>File not found or access denied!</b>", parse_mode=enums.ParseMode.HTML)
             await self.store_bot_message(message.from_user.id, error_msg.id)
     
@@ -2572,6 +2603,27 @@ class Bot(Client):
             
             if not file_ids:
                 error_msg = await message.reply("❌ <b>No files found in batch!</b>", parse_mode=enums.ParseMode.HTML)
+                await self.store_bot_message(user_id, error_msg.id)
+                return
+            
+            # Check if bot has access to the database channel
+            if not self.db_channel:
+                error_msg = await message.reply("❌ <b>Database channel not set!</b>", parse_mode=enums.ParseMode.HTML)
+                await self.store_bot_message(user_id, error_msg.id)
+                return
+            
+            # Check if bot is admin in database channel
+            try:
+                # Get bot's status in the channel
+                member = await self.get_chat_member(self.db_channel, (await self.get_me()).id)
+                if member.status not in ["administrator", "creator"]:
+                    # Bot is not admin - cannot copy messages
+                    error_msg = await message.reply("❌ <b>Bot is not admin in database channel!</b>", parse_mode=enums.ParseMode.HTML)
+                    await self.store_bot_message(user_id, error_msg.id)
+                    return
+            except Exception as e:
+                logger.error(f"Error checking admin status: {e}")
+                error_msg = await message.reply("❌ <b>Cannot access database channel!</b>", parse_mode=enums.ParseMode.HTML)
                 await self.store_bot_message(user_id, error_msg.id)
                 return
             
@@ -2783,13 +2835,14 @@ class Bot(Client):
             admin_callbacks = [
                 "settings_menu", "files_settings", "auto_delete_settings",
                 "force_sub_settings", "bot_msg_settings", "fsub_chnl_menu", 
-                "stats_menu", "users_menu", "add_fsub_menu", "del_fsub_menu",
+                "stats_menu", "users_menu", "add_fsub_menu", "del_fsub_menu",  # Fixed: Added del_fsub_menu
                 "refresh_fsub", "test_fsub", "reqfsub_on", "reqfsub_off",
                 "refresh_users", "refresh_stats", "refresh_autodel", 
                 "toggle_protect_content", "toggle_hide_caption", 
                 "toggle_channel_button", "toggle_auto_delete", 
                 "toggle_clean_conversation", "toggle_show_instruction",
-                "custom_buttons_menu", "custom_texts_menu", "more_stats"
+                "custom_buttons_menu", "custom_texts_menu", "more_stats",
+                "admin_list_menu"  # Added admin_list_menu
             ]
 
             if data in admin_callbacks:
@@ -2917,6 +2970,16 @@ class Bot(Client):
                 message = await self._create_message_from_callback(query)
                 await self.stats_command(message)
 
+            elif data == "admin_list_menu":  # NEW: Handle admin list menu
+                await query.answer()
+                try:
+                    await query.message.delete()
+                except:
+                    pass
+                
+                message = await self._create_message_from_callback(query)
+                await self.admin_list_command(message)
+
             # ===================================
             # FORCE SUBSCRIBE CHECK CALLBACK
             # ===================================
@@ -3011,6 +3074,18 @@ class Bot(Client):
                 await self.test_force_sub(query)
 
             # ===================================
+            # ADD/REMOVE FSUB CHANNELS CALLBACKS (FIXED)
+            # ===================================
+
+            elif data == "add_fsub_menu":
+                await query.answer("➕ Add Force Sub Channel")
+                await self.handle_add_fsub_menu(query)
+
+            elif data == "del_fsub_menu":  # FIXED: This callback was missing
+                await query.answer("➖ Remove Force Sub Channel")
+                await self.handle_del_fsub_menu(query)
+
+            # ===================================
             # CHANNEL REMOVAL CALLBACK
             # ===================================
 
@@ -3062,6 +3137,93 @@ class Bot(Client):
                 )
         
         return FakeMessage(query)
+    
+    # ===================================
+    # NEW: ADD FSUB MENU HANDLER (FIXED)
+    # ===================================
+    
+    async def handle_add_fsub_menu(self, query: CallbackQuery):
+        """Handle add force sub channel menu"""
+        try:
+            await query.answer()
+            
+            # Set state for adding force sub channel
+            user_id = query.from_user.id
+            self.button_setting_state[user_id] = {"type": "add_fsub"}
+            
+            # Ask for channel ID
+            await query.message.edit_text(
+                "➕ <b>ADD FORCE SUB CHANNEL</b>\n\n"
+                "<blockquote>"
+                "<b>Please send:</b>\n"
+                "<code>channel_id channel_username</code>\n\n"
+                "<b>Examples:</b>\n"
+                "<code>-1001234567890 @channel_username</code>\n"
+                "<code>-1001234567890</code> (for private channels)\n\n"
+                "<b>Note:</b> Bot must be admin in the channel!"
+                "</blockquote>",
+                parse_mode=enums.ParseMode.HTML
+            )
+            
+        except Exception as e:
+            logger.error(f"Error in handle_add_fsub_menu: {e}")
+            await query.answer("❌ Error!", show_alert=True)
+    
+    # ===================================
+    # NEW: DEL FSUB MENU HANDLER (FIXED - WAS MISSING)
+    # ===================================
+    
+    async def handle_del_fsub_menu(self, query: CallbackQuery):
+        """Handle delete force sub channel menu"""
+        try:
+            await query.answer()
+            
+            # Get current force sub channels
+            force_sub_channels = await self.db.get_force_sub_channels()
+            
+            if not force_sub_channels:
+                await query.answer("❌ No force sub channels to remove!", show_alert=True)
+                return
+            
+            # Create message with buttons for each channel
+            message_text = "➖ <b>REMOVE FORCE SUB CHANNEL</b>\n\n"
+            message_text += "<blockquote>"
+            message_text += "Select a channel to remove:\n\n"
+            
+            buttons = []
+            
+            for i, channel in enumerate(force_sub_channels[:10]):  # Show max 10
+                channel_id = channel.get("channel_id")
+                username = channel.get("channel_username", "Private")
+                
+                message_text += f"<b>{i+1}. Channel ID:</b> <code>{channel_id}</code>\n"
+                message_text += f"   <b>Username:</b> @{username}\n\n"
+                
+                buttons.append([
+                    InlineKeyboardButton(
+                        f"Remove {channel_id}",
+                        callback_data=f"remove_channel_{channel_id}"
+                    )
+                ])
+            
+            message_text += "</blockquote>"
+            
+            buttons.append([
+                InlineKeyboardButton("🔙 Back", callback_data="fsub_chnl_menu"),
+                InlineKeyboardButton("❌ Close", callback_data="close")
+            ])
+            
+            keyboard = InlineKeyboardMarkup(buttons)
+            
+            await query.message.edit_text(
+                message_text,
+                reply_markup=keyboard,
+                parse_mode=enums.ParseMode.HTML
+            )
+            
+        except Exception as e:
+            logger.error(f"Error in handle_del_fsub_menu: {e}")
+            await query.answer("❌ Error!", show_alert=True)
     
     # ===================================
     # RESEND FILES CALLBACK METHOD (FEATURE 3)
@@ -5153,11 +5315,18 @@ class Bot(Client):
             await self.store_bot_message(user_id, response.id)
 
     # ===================================
-    # FILE MANAGEMENT COMMANDS
+    # FILE MANAGEMENT COMMANDS (FIXED VERSION)
     # ===================================
 
     async def genlink_command(self, message: Message):
-        """Handle /genlink command"""
+        """
+        Handle /genlink command - FIXED VERSION
+        
+        FIXES:
+        1. Checks if bot is admin in database channel
+        2. Properly generates working links
+        3. Handles errors correctly
+        """
         user_id = message.from_user.id
         
         # Check admin permission
@@ -5189,26 +5358,47 @@ class Bot(Client):
             return
 
         try:
+            # Check if bot is admin in database channel
+            try:
+                # Get bot's status in the channel
+                member = await self.get_chat_member(self.db_channel, (await self.get_me()).id)
+                if member.status not in ["administrator", "creator"]:
+                    # Bot is not admin - cannot forward message
+                    response = await message.reply("❌ <b>Bot is not admin in the database channel!</b>", parse_mode=enums.ParseMode.HTML)
+                    await self.store_bot_message(user_id, response.id)
+                    return
+            except Exception as e:
+                logger.error(f"Error checking admin status: {e}")
+                response = await message.reply("❌ <b>Cannot access database channel!</b>", parse_mode=enums.ParseMode.HTML)
+                await self.store_bot_message(user_id, response.id)
+                return
+
             # Forward message to database channel
-            forwarded = await message.reply_to_message.forward(self.db_channel)
+            try:
+                forwarded = await message.reply_to_message.forward(self.db_channel)
+                
+                # Generate link
+                base64_id = await encode(str(forwarded.id))  # FIXED: Encode only the message ID
+                bot_username = Config.BOT_USERNAME
+                link = f"https://t.me/{bot_username}?start={base64_id}"  # FIXED: Use direct encoded ID
 
-            # Generate link
-            base64_id = await encode(f"file_{forwarded.id}")
-            bot_username = Config.BOT_USERNAME
-            link = f"https://t.me/{bot_username}?start={base64_id}"
+                response = await message.reply(
+                    f"✅ <b>Link Generated!</b>\n\n"
+                    f"<blockquote>"
+                    f"<b>🔗 Link:</b>\n"
+                    f"<code>{link}</code>\n\n"
+                    f"<b>📁 File ID:</b> <code>{forwarded.id}</code>"
+                    f"</blockquote>",
+                    parse_mode=enums.ParseMode.HTML,
+                    disable_web_page_preview=True
+                )
 
-            response = await message.reply(
-                f"✅ <b>Link Generated!</b>\n\n"
-                f"<blockquote>"
-                f"<b>🔗 Link:</b>\n"
-                f"<code>{link}</code>\n\n"
-                f"<b>📁 File ID:</b> <code>{forwarded.id}</code>"
-                f"</blockquote>",
-                parse_mode=enums.ParseMode.HTML,
-                disable_web_page_preview=True
-            )
+                await self.store_bot_message(user_id, response.id)
 
-            await self.store_bot_message(user_id, response.id)
+            except Exception as e:
+                logger.error(f"Error forwarding message: {e}")
+                response = await message.reply("❌ <b>Error forwarding message to database channel!</b>", parse_mode=enums.ParseMode.HTML)
+                await self.store_bot_message(user_id, response.id)
 
         except Exception as e:
             logger.error(f"Error generating link: {e}")
@@ -5216,309 +5406,189 @@ class Bot(Client):
             await self.store_bot_message(user_id, response.id)
 
     async def getlink_command(self, message: Message):
-        """Handle /getlink command"""
-        # Alias for genlink_command
+        """Handle /getlink command - Alias for genlink"""
         await self.genlink_command(message)
 
-    # FIXED BATCH COMMAND CODE
-# Add this to replace the existing batch_command method in bot.py
-
-async def batch_command(self, message: Message):
-    """
-    Handle /batch command - First/Last Message Method
+    # ===================================
+    # BATCH COMMAND - FIXED VERSION
+    # ===================================
     
-    IMPLEMENTS: FEATURE 1 (Clean Conversation)
-    """
-    user_id = message.from_user.id
-    
-    # Check admin permission
-    if not await self.is_user_admin(user_id):
-        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-        await self.store_bot_message(user_id, response.id)
-        return
-
-    # FEATURE 1: Delete previous bot message
-    settings = await self.db.get_settings()
-    if settings.get("clean_conversation", True):
-        await self.delete_previous_bot_message(user_id)
-
-    if not self.db_channel:
-        response = await message.reply("❌ <b>Set database channel first!</b>", parse_mode=enums.ParseMode.HTML)
-        await self.store_bot_message(user_id, response.id)
-        return
-
-    # Initialize batch state with FIRST/LAST method
-    self.batch_state[user_id] = {
-        "method": "first_last",  # NEW: Method identifier
-        "step": "waiting_first",  # NEW: Current step
-        "first_msg_id": None,
-        "last_msg_id": None,
-        "channel_id": self.db_channel
-    }
-
-    response = await message.reply(
-        "📁 <b>BATCH MODE STARTED</b>\n\n"
-        "<blockquote>"
-        f"<b>Method:</b> First/Last Message\n"
-        f"<b>Max files:</b> {MAX_BATCH_SIZE}\n\n"
-        f"<b>📝 Step 1:</b>\n"
-        "Go to your database channel and forward the <b>FIRST message</b> (starting file) to me.\n\n"
-        f"<i>Example: If you want Episodes 1-50, forward Episode 1</i>"
-        "</blockquote>",
-        parse_mode=enums.ParseMode.HTML
-    )
-
-    await self.store_bot_message(user_id, response.id)
-
-
-# ADD THIS NEW METHOD to handle batch messages
-async def handle_batch_message(self, message: Message):
-    """
-    Handle forwarded messages in batch mode
-    """
-    user_id = message.from_user.id
-    
-    if user_id not in self.batch_state:
-        return
-    
-    state = self.batch_state[user_id]
-    
-    # Check if message is forwarded from database channel
-    if not message.forward_from_chat:
-        response = await message.reply(
-            "❌ <b>Please forward a message from your database channel!</b>\n\n"
-            "<i>Don't send new files. Forward existing messages from the channel.</i>",
-            parse_mode=enums.ParseMode.HTML
-        )
-        await self.store_bot_message(user_id, response.id)
-        return
-    
-    # Verify it's from the correct channel
-    if message.forward_from_chat.id != self.db_channel:
-        response = await message.reply(
-            f"❌ <b>Wrong channel!</b>\n\n"
-            f"Forward from your database channel: <code>{self.db_channel}</code>",
-            parse_mode=enums.ParseMode.HTML
-        )
-        await self.store_bot_message(user_id, response.id)
-        return
-    
-    # Get the original message ID
-    msg_id = message.forward_from_message_id
-    
-    # Handle based on current step
-    if state["step"] == "waiting_first":
-        # Store first message ID
-        state["first_msg_id"] = msg_id
-        state["step"] = "waiting_last"
+    async def batch_command(self, message: Message):
+        """
+        Handle /batch command - First/Last Message Method
         
+        IMPLEMENTS: FEATURE 1 (Clean Conversation)
+        """
+        user_id = message.from_user.id
+        
+        # Check admin permission
+        if not await self.is_user_admin(user_id):
+            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
+            return
+
+        # FEATURE 1: Delete previous bot message
+        settings = await self.db.get_settings()
+        if settings.get("clean_conversation", True):
+            await self.delete_previous_bot_message(user_id)
+
+        if not self.db_channel:
+            response = await message.reply("❌ <b>Set database channel first!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
+            return
+
+        # Initialize batch state with FIRST/LAST method
+        self.batch_state[user_id] = {
+            "method": "first_last",  # NEW: Method identifier
+            "step": "waiting_first",  # NEW: Current step
+            "first_msg_id": None,
+            "last_msg_id": None,
+            "channel_id": self.db_channel
+        }
+
         response = await message.reply(
-            "✅ <b>First message received!</b>\n\n"
+            "📁 <b>BATCH MODE STARTED</b>\n\n"
             "<blockquote>"
-            f"<b>📍 Message ID:</b> <code>{msg_id}</code>\n\n"
-            f"<b>📝 Step 2:</b>\n"
-            "Now forward the <b>LAST message</b> (ending file) from the same channel.\n\n"
-            f"<i>Example: If you want Episodes 1-50, forward Episode 50</i>\n\n"
-            "💡 <b>Tip:</b> All messages between first and last will be included!"
+            f"<b>Method:</b> First/Last Message\n"
+            f"<b>Max files:</b> {MAX_BATCH_SIZE}\n\n"
+            f"<b>📝 Step 1:</b>\n"
+            "Go to your database channel and forward the <b>FIRST message</b> (starting file) to me.\n\n"
+            f"<i>Example: If you want Episodes 1-50, forward Episode 1</i>"
             "</blockquote>",
             parse_mode=enums.ParseMode.HTML
         )
+
         await self.store_bot_message(user_id, response.id)
+
+    # ===================================
+    # HANDLE BATCH MESSAGES - FIXED
+    # ===================================
     
-    elif state["step"] == "waiting_last":
-        # Store last message ID
-        state["last_msg_id"] = msg_id
+    async def handle_batch_message(self, message: Message):
+        """
+        Handle forwarded messages in batch mode - FIXED
+        """
+        user_id = message.from_user.id
         
-        # Validate range
-        first_id = state["first_msg_id"]
-        last_id = msg_id
+        if user_id not in self.batch_state:
+            return
         
-        if last_id <= first_id:
+        state = self.batch_state[user_id]
+        
+        # Check if message is forwarded from database channel
+        if not message.forward_from_chat:
             response = await message.reply(
-                "❌ <b>Invalid range!</b>\n\n"
+                "❌ <b>Please forward a message from your database channel!</b>\n\n"
+                "<i>Don't send new files. Forward existing messages from the channel.</i>",
+                parse_mode=enums.ParseMode.HTML
+            )
+            await self.store_bot_message(user_id, response.id)
+            return
+        
+        # Verify it's from the correct channel
+        if message.forward_from_chat.id != self.db_channel:
+            response = await message.reply(
+                f"❌ <b>Wrong channel!</b>\n\n"
+                f"Forward from your database channel: <code>{self.db_channel}</code>",
+                parse_mode=enums.ParseMode.HTML
+            )
+            await self.store_bot_message(user_id, response.id)
+            return
+        
+        # Get the original message ID
+        msg_id = message.forward_from_message_id
+        
+        # Handle based on current step
+        if state["step"] == "waiting_first":
+            # Store first message ID
+            state["first_msg_id"] = msg_id
+            state["step"] = "waiting_last"
+            
+            response = await message.reply(
+                "✅ <b>First message received!</b>\n\n"
                 "<blockquote>"
-                f"Last message ID ({last_id}) must be greater than first message ID ({first_id}).\n\n"
-                "Please forward a message that comes <b>after</b> the first message."
+                f"<b>📍 Message ID:</b> <code>{msg_id}</code>\n\n"
+                f"<b>📝 Step 2:</b>\n"
+                "Now forward the <b>LAST message</b> (ending file) from the same channel.\n\n"
+                f"<i>Example: If you want Episodes 1-50, forward Episode 50</i>\n\n"
+                "💡 <b>Tip:</b> All messages between first and last will be included!"
                 "</blockquote>",
                 parse_mode=enums.ParseMode.HTML
             )
             await self.store_bot_message(user_id, response.id)
-            return
         
-        # Calculate total files
-        total_files = last_id - first_id + 1
-        
-        if total_files > MAX_BATCH_SIZE:
-            response = await message.reply(
-                f"❌ <b>Too many files!</b>\n\n"
-                f"<blockquote>"
-                f"Range: {first_id} to {last_id} = <b>{total_files} files</b>\n"
-                f"Maximum: <b>{MAX_BATCH_SIZE} files</b>\n\n"
-                f"Please select a smaller range."
-                f"</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            await self.store_bot_message(user_id, response.id)
-            return
-        
-        # Generate batch link
-        try:
-            # Create list of all message IDs in range
-            file_ids = list(range(first_id, last_id + 1))
+        elif state["step"] == "waiting_last":
+            # Store last message ID
+            state["last_msg_id"] = msg_id
             
-            # Encode the range (more efficient than listing all IDs)
-            encoded = await encode(f"{first_id}-{last_id}")
+            # Validate range
+            first_id = state["first_msg_id"]
+            last_id = msg_id
             
-            bot_username = Config.BOT_USERNAME
-            link = f"https://t.me/{bot_username}?start=batch_{encoded}"
-            
-            response = await message.reply(
-                f"✅ <b>BATCH LINK GENERATED!</b>\n\n"
-                f"<blockquote>"
-                f"<b>📊 Range:</b> {first_id} to {last_id}\n"
-                f"<b>📁 Total Files:</b> {total_files}\n"
-                f"<b>📺 Channel:</b> <code>{self.db_channel}</code>\n\n"
-                f"<b>🔗 Share Link:</b>\n"
-                f"<code>{link}</code>"
-                f"</blockquote>\n\n"
-                f"<i>Users who click this link will receive all {total_files} files!</i>",
-                parse_mode=enums.ParseMode.HTML,
-                disable_web_page_preview=True
-            )
-            
-            # Clear state
-            del self.batch_state[user_id]
-            
-            await self.store_bot_message(user_id, response.id)
-            
-        except Exception as e:
-            logger.error(f"Error generating batch link: {e}")
-            response = await message.reply("❌ <b>Error generating link!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-
-
-# ALSO UPDATE handle_batch_link to support range format
-async def handle_batch_link(self, message: Message, batch_id: str):
-    """
-    Handle batch file link - SUPPORTS BOTH FORMATS
-    
-    Format 1: batch_ABC123 (comma-separated IDs)
-    Format 2: batch_XYZ789 (range: first-last)
-    
-    IMPLEMENTS: ALL THREE AUTO-DELETE FEATURES
-    """
-    try:
-        user_id = message.from_user.id
-        
-        # Decode batch data
-        decoded = await decode(batch_id)
-        if not decoded:
-            error_msg = await message.reply("❌ <b>Invalid batch link!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, error_msg.id)
-            return
-        
-        # Check if it's a range format (first-last) or comma-separated
-        if "-" in decoded and "," not in decoded:
-            # Range format: "100-150"
-            try:
-                first, last = decoded.split("-")
-                first_id = int(first)
-                last_id = int(last)
-                file_ids = list(range(first_id, last_id + 1))
-            except:
-                error_msg = await message.reply("❌ <b>Invalid batch format!</b>", parse_mode=enums.ParseMode.HTML)
-                await self.store_bot_message(user_id, error_msg.id)
-                return
-        else:
-            # Comma-separated format: "123,124,125"
-            file_ids = [int(x) for x in decoded.split(",") if x.isdigit()]
-        
-        if not file_ids:
-            error_msg = await message.reply("❌ <b>No files found in batch!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, error_msg.id)
-            return
-        
-        # Limit to MAX_BATCH_SIZE
-        file_ids = file_ids[:MAX_BATCH_SIZE]
-        
-        # Send progress message
-        progress_msg = await message.reply(
-            f"📤 <b>Sending {len(file_ids)} files...</b>\n\n"
-            f"<i>Please wait...</i>",
-            parse_mode=enums.ParseMode.HTML
-        )
-        
-        # Send files
-        sent_file_ids = []
-        sent_message_ids = []
-        failed_count = 0
-        
-        for i, file_id in enumerate(file_ids, 1):
-            try:
-                response = await self.copy_message(
-                    chat_id=message.chat.id,
-                    from_chat_id=self.db_channel,
-                    message_id=file_id,
-                    protect_content=self.settings.get("protect_content", True)
+            if last_id <= first_id:
+                response = await message.reply(
+                    "❌ <b>Invalid range!</b>\n\n"
+                    "<blockquote>"
+                    f"Last message ID ({last_id}) must be greater than first message ID ({first_id}).\n\n"
+                    "Please forward a message that comes <b>after</b> the first message."
+                    "</blockquote>",
+                    parse_mode=enums.ParseMode.HTML
                 )
-                sent_file_ids.append(file_id)
-                sent_message_ids.append(response.id)
+                await self.store_bot_message(user_id, response.id)
+                return
+            
+            # Calculate total files
+            total_files = last_id - first_id + 1
+            
+            if total_files > MAX_BATCH_SIZE:
+                response = await message.reply(
+                    f"❌ <b>Too many files!</b>\n\n"
+                    f"<blockquote>"
+                    f"Range: {first_id} to {last_id} = <b>{total_files} files</b>\n"
+                    f"Maximum: <b>{MAX_BATCH_SIZE} files</b>\n\n"
+                    f"Please select a smaller range."
+                    f"</blockquote>",
+                    parse_mode=enums.ParseMode.HTML
+                )
+                await self.store_bot_message(user_id, response.id)
+                return
+            
+            # Generate batch link
+            try:
+                # Encode the range (more efficient than listing all IDs)
+                encoded = await encode(f"{first_id}-{last_id}")
                 
-                # FEATURE 2: Schedule file for auto-deletion if enabled
-                settings = await self.db.get_settings()
-                auto_delete = settings.get("auto_delete", False)
-                if auto_delete:
-                    delete_time = settings.get("auto_delete_time", 300)
-                    await self.schedule_file_deletion(user_id, response.id, delete_time)
+                bot_username = Config.BOT_USERNAME
+                link = f"https://t.me/{bot_username}?start=batch_{encoded}"
                 
-                # Update progress every 10 files
-                if i % 10 == 0:
-                    try:
-                        await progress_msg.edit_text(
-                            f"📤 <b>Sending files...</b>\n\n"
-                            f"<b>Progress:</b> {i}/{len(file_ids)}\n"
-                            f"<i>Please wait...</i>",
-                            parse_mode=enums.ParseMode.HTML
-                        )
-                    except:
-                        pass
+                response = await message.reply(
+                    f"✅ <b>BATCH LINK GENERATED!</b>\n\n"
+                    f"<blockquote>"
+                    f"<b>📊 Range:</b> {first_id} to {last_id}\n"
+                    f"<b>📁 Total Files:</b> {total_files}\n"
+                    f"<b>📺 Channel:</b> <code>{self.db_channel}</code>\n\n"
+                    f"<b>🔗 Share Link:</b>\n"
+                    f"<code>{link}</code>"
+                    f"</blockquote>\n\n"
+                    f"<i>Users who click this link will receive all {total_files} files!</i>",
+                    parse_mode=enums.ParseMode.HTML,
+                    disable_web_page_preview=True
+                )
+                
+                # Clear state
+                del self.batch_state[user_id]
+                
+                await self.store_bot_message(user_id, response.id)
                 
             except Exception as e:
-                logger.error(f"Error sending file {file_id}: {e}")
-                failed_count += 1
-                continue
-        
-        # Delete progress message
-        try:
-            await progress_msg.delete()
-        except:
-            pass
-        
-        # Track files for potential resend
-        if sent_file_ids:
-            await self.track_user_files(user_id, sent_file_ids)
-        
-        # Send completion message
-        if sent_file_ids:
-            success_msg = await message.reply(
-                f"✅ <b>Batch sent successfully!</b>\n\n"
-                f"<blockquote>"
-                f"<b>📁 Total files:</b> {len(file_ids)}\n"
-                f"<b>✅ Sent:</b> {len(sent_file_ids)}\n"
-                f"<b>❌ Failed:</b> {failed_count}"
-                f"</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            # FEATURE 1: Store for clean conversation
-            await self.store_bot_message(user_id, success_msg.id)
-        else:
-            error_msg = await message.reply("❌ <b>Failed to send any files!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, error_msg.id)
-        
-    except Exception as e:
-        logger.error(f"Error handling batch link: {e}")
-        error_msg = await message.reply("❌ <b>Batch not found or access denied!</b>", parse_mode=enums.ParseMode.HTML)
-        await self.store_bot_message(message.from_user.id, error_msg.id)
+                logger.error(f"Error generating batch link: {e}")
+                response = await message.reply("❌ <b>Error generating link!</b>", parse_mode=enums.ParseMode.HTML)
+                await self.store_bot_message(user_id, response.id)
+
+    # ===================================
+    # CUSTOM BATCH COMMAND
+    # ===================================
+    
     async def custom_batch_command(self, message: Message):
         """Handle /custom_batch command"""
         user_id = message.from_user.id
@@ -5562,6 +5632,10 @@ async def handle_batch_link(self, message: Message, batch_id: str):
 
         await self.store_bot_message(user_id, response.id)
 
+    # ===================================
+    # SPECIAL LINK COMMAND
+    # ===================================
+    
     async def special_link_command(self, message: Message):
         """Handle /special_link command"""
         user_id = message.from_user.id
@@ -5700,7 +5774,7 @@ async def handle_batch_link(self, message: Message, batch_id: str):
         await self.store_bot_message(user_id, response.id)
 
     # ===================================
-    # CHANNEL MANAGEMENT COMMANDS
+    # CHANNEL MANAGEMENT COMMANDS (FIXED)
     # ===================================
 
     async def setchannel_command(self, message: Message):
@@ -5777,7 +5851,11 @@ async def handle_batch_link(self, message: Message, batch_id: str):
             await self.store_bot_message(user_id, response.id)
 
     async def checkchannel_command(self, message: Message):
-        """Handle /checkchannel command"""
+        """
+        Handle /checkchannel command - FIXED VERSION
+        
+        FIXED: Now properly checks if bot is admin in the channel
+        """
         user_id = message.from_user.id
         
         # Check admin permission
@@ -5798,9 +5876,20 @@ async def handle_batch_link(self, message: Message, batch_id: str):
 
         try:
             chat = await self.get_chat(self.db_channel)
-            member = await self.get_chat_member(self.db_channel, (await self.get_me()).id)
-
-            status = "✅ Admin" if member.status in ["administrator", "creator"] else "❌ Not Admin"
+            
+            # FIXED: Check bot's admin status in the channel
+            try:
+                member = await self.get_chat_member(self.db_channel, (await self.get_me()).id)
+                if member.status in ["administrator", "creator"]:
+                    status = "✅ Admin"
+                    bot_permissions = "✅ Full access"
+                else:
+                    status = "❌ Not Admin"
+                    bot_permissions = "❌ Limited access"
+            except Exception as e:
+                logger.error(f"Error checking admin status: {e}")
+                status = "❌ Not Admin"
+                bot_permissions = "❌ Cannot access"
 
             response = await message.reply(
                 f"📊 <b>CHANNEL STATUS</b>\n\n"
@@ -5809,6 +5898,7 @@ async def handle_batch_link(self, message: Message, batch_id: str):
                 f"<b>🆔 ID:</b> <code>{self.db_channel}</code>\n"
                 f"<b>👤 Username:</b> @{chat.username if chat.username else 'Private'}\n"
                 f"<b>🤖 Bot Status:</b> {status}\n"
+                f"<b>🔧 Bot Permissions:</b> {bot_permissions}\n"
                 f"<b>📅 Members:</b> {chat.members_count if chat.members_count else 'Unknown'}"
                 f"</blockquote>",
                 parse_mode=enums.ParseMode.HTML
@@ -5932,7 +6022,7 @@ async def handle_batch_link(self, message: Message, batch_id: str):
         # Management buttons
         buttons.append([
             InlineKeyboardButton("➕ ADD CHANNEL", callback_data="add_fsub_menu"),
-            InlineKeyboardButton("➖ REMOVE CHANNEL", callback_data="del_fsub_menu")
+            InlineKeyboardButton("➖ REMOVE CHANNEL", callback_data="del_fsub_menu")  # FIXED: Now works
         ])
         
         buttons.append([
@@ -6464,36 +6554,96 @@ async def handle_batch_link(self, message: Message, batch_id: str):
         user_id = message.from_user.id
         
         if user_id in self.button_setting_state:
-            button_text = message.text
+            state = self.button_setting_state[user_id]
             
-            # Parse button configuration
-            buttons = parse_button_string(button_text)
+            if state.get("type") == "add_fsub":
+                # Handle adding force sub channel
+                try:
+                    parts = message.text.strip().split()
+                    if len(parts) < 1:
+                        response = await message.reply("❌ <b>Invalid format!</b>\n\n<code>channel_id [username]</code>", parse_mode=enums.ParseMode.HTML)
+                        await self.store_bot_message(user_id, response.id)
+                        return
+                    
+                    channel_id = int(parts[0])
+                    username = parts[1] if len(parts) > 1 else None
+                    
+                    if username:
+                        username = username.lstrip('@')
+                    
+                    # Check if bot is admin in channel
+                    try:
+                        await self.get_chat_member(channel_id, (await self.get_me()).id)
+                    except Exception as e:
+                        response = await message.reply(f"❌ <b>Bot is not admin in channel {channel_id}!</b>", parse_mode=enums.ParseMode.HTML)
+                        await self.store_bot_message(user_id, response.id)
+                        # Clear state
+                        del self.button_setting_state[user_id]
+                        return
+                    
+                    # Add channel to database
+                    await self.db.add_force_sub_channel(channel_id, username)
+                    
+                    # Update local cache
+                    self.force_sub_channels = await self.db.get_force_sub_channels()
+                    
+                    response = await message.reply(
+                        f"✅ <b>Channel Added!</b>\n\n"
+                        f"<blockquote>"
+                        f"<b>📢 Channel ID:</b> <code>{channel_id}</code>\n"
+                        f"<b>👤 Username:</b> @{username if username else 'Private'}\n\n"
+                        f"<b>Total channels:</b> {len(self.force_sub_channels)}"
+                        f"</blockquote>",
+                        parse_mode=enums.ParseMode.HTML
+                    )
+                    
+                    # Clear state
+                    del self.button_setting_state[user_id]
+                    await self.store_bot_message(user_id, response.id)
+                    
+                except ValueError:
+                    response = await message.reply("❌ <b>Invalid channel ID! Must be a number.</b>", parse_mode=enums.ParseMode.HTML)
+                    await self.store_bot_message(user_id, response.id)
+                except Exception as e:
+                    logger.error(f"Error adding force sub channel: {e}")
+                    response = await message.reply("❌ <b>Error adding channel!</b>", parse_mode=enums.ParseMode.HTML)
+                    await self.store_bot_message(user_id, response.id)
+                    # Clear state
+                    if user_id in self.button_setting_state:
+                        del self.button_setting_state[user_id]
             
-            if buttons:
-                # Save button configuration
-                await self.db.update_setting("custom_button", button_text)
-                
-                response = await message.reply(
-                    f"✅ <b>Custom Buttons Saved!</b>\n\n"
-                    f"<blockquote>"
-                    f"<b>Total buttons:</b> {sum(len(row) for row in buttons)}"
-                    f"</blockquote>",
-                    parse_mode=enums.ParseMode.HTML
-                )
             else:
-                response = await message.reply(
-                    "❌ <b>Invalid button format!</b>\n\n"
-                    "<blockquote>"
-                    "<b>Format:</b>\n"
-                    "Button Text | URL : Button Text 2 | URL2\n"
-                    "Button Text 3 | URL3"
-                    "</blockquote>",
-                    parse_mode=enums.ParseMode.HTML
-                )
-            
-            # Clear state
-            del self.button_setting_state[user_id]
-            await self.store_bot_message(user_id, response.id)
+                # Original button setting logic
+                button_text = message.text
+                
+                # Parse button configuration
+                buttons = parse_button_string(button_text)
+                
+                if buttons:
+                    # Save button configuration
+                    await self.db.update_setting("custom_button", button_text)
+                    
+                    response = await message.reply(
+                        f"✅ <b>Custom Buttons Saved!</b>\n\n"
+                        f"<blockquote>"
+                        f"<b>Total buttons:</b> {sum(len(row) for row in buttons)}"
+                        f"</blockquote>",
+                        parse_mode=enums.ParseMode.HTML
+                    )
+                else:
+                    response = await message.reply(
+                        "❌ <b>Invalid button format!</b>\n\n"
+                        "<blockquote>"
+                        "<b>Format:</b>\n"
+                        "Button Text | URL : Button Text 2 | URL2\n"
+                        "Button Text 3 | URL3"
+                        "</blockquote>",
+                        parse_mode=enums.ParseMode.HTML
+                    )
+                
+                # Clear state
+                del self.button_setting_state[user_id]
+                await self.store_bot_message(user_id, response.id)
 
     async def handle_text_setting_text(self, message: Message):
         """Handle text setting text"""
@@ -6523,7 +6673,7 @@ async def handle_batch_link(self, message: Message, batch_id: str):
         """Handle chat join requests"""
         try:
             user_id = join_request.from_user.id
-            chat_id = join_request.chat.id
+            chat_id = join_request.chat
             
             # Save join request to database
             await self.db.save_join_request(user_id, chat_id)
