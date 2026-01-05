@@ -1516,20 +1516,22 @@ class Bot(Client):
             
             # Create deletion task
             task = asyncio.create_task(self._delete_file_after_delay(user_id, message_id, delete_after))
+            
             # Store file message info
-        if user_id not in self.user_file_messages:
-            self.user_file_messages[user_id] = []
-        
-        self.user_file_messages[user_id].append({
-            "message_id": message_id,
-            "delete_at": delete_at,
-            "task": task
-        })
-        
-        logger.info(f"✓ Scheduled file message {message_id} for deletion in {delete_after}s for user {user_id}")
-        
-    except Exception as e:
-        logger.error(f"Error scheduling file deletion: {e}")
+            if user_id not in self.user_file_messages:
+                self.user_file_messages[user_id] = []
+            
+            self.user_file_messages[user_id].append({
+                "message_id": message_id,
+                "delete_at": delete_at,
+                "task": task
+            })
+            
+            logger.info(f"✓ Scheduled file message {message_id} for deletion in {delete_after}s for user {user_id}")
+            
+        except Exception as e:
+            logger.error(f"Error scheduling file deletion: {e}")
+
 
 async def _delete_file_after_delay(self, user_id: int, message_id: int, delay: int):
     """
