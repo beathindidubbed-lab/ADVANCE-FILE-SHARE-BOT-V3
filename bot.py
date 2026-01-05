@@ -89,10 +89,11 @@ MAX_SPECIAL_FILES = 50
 MAX_CUSTOM_BATCH = 50
 AUTO_DELETE_TIMES = [60, 300, 600, 1800, 3600]  # 1min, 5min, 10min, 30min, 1hour
 DEFAULT_BOT_PICS = [
-    "https://telegra.ph/file/d4224ced47f45122b0f89.jpg",
-    "https://telegra.ph/file/8a8b6f0c7f71f1c5e3d2a.jpg",
-    "https://telegra.ph/file/9c5a8f6e8d4c3b2a1f0e9.jpg",
-    "https://telegra.ph/file/7b6c5d4e3f2a1b0c9d8e7.jpg"
+    "https://ibb.co/kjTFrs3",
+    "https://ibb.co/rKXkRhP5",
+    "https://ibb.co/Fk8yhV07",
+    "https://ibb.co/bjfbzQTM"
+    "https://ibb.co/N2PDXw6w"
 ]
 
 # Start Command Reactions
@@ -147,6 +148,9 @@ BOT_COMMANDS = {
         BotCommand("done", "Finish operation")
     ]
 }
+
+
+
 
 # ===================================
 # SECTION 2: CONFIGURATION CLASS (FIXED)
@@ -712,6 +716,7 @@ class Database:
         except Exception as e:
             logger.error(f"Error removing force subchannel {channel_id}: {e}")
             return False
+    
     async def get_force_sub_channels(self):
         """Get all force subscribe channels"""
         try:
@@ -736,144 +741,144 @@ class Database:
             logger.error(f"Error clearing force sub channels: {e}")
             return False
 
-# ===================================
-# ADMIN OPERATIONS (VERIFIED & FIXED)
-# ===================================
+    # ===================================
+    # ADMIN OPERATIONS (VERIFIED & FIXED) - NOW PROPERLY INDENTED
+    # ===================================
 
-async def add_admin(self, user_id: int):
-    """Add admin to database"""
-    admin_data = {
-        "user_id": user_id,
-        "added_date": datetime.datetime.now(datetime.timezone.utc)
-    }
-    
-    try:
-        await self.admins.update_one(
-            {"user_id": user_id},
-            {"$set": admin_data},
-            upsert=True
-        )
-        return True
-    except Exception as e:
-        logger.error(f"Error adding admin {user_id}: {e}")
-        return False
-
-async def remove_admin(self, user_id: int):
-    """Remove admin from database"""
-    try:
-        await self.admins.delete_one({"user_id": user_id})
-        return True
-    except Exception as e:
-        logger.error(f"Error removing admin {user_id}: {e}")
-        return False
-
-async def get_admins(self):
-    """Get all admins from database"""
-    try:
-        cursor = self.admins.find({})
-        admins = []
-        async for doc in cursor:
-            admins.append(doc["user_id"])
-        return admins
-    except Exception as e:
-        logger.error(f"Error getting admins: {e}")
-        return []
-
-async def is_admin(self, user_id: int):
-    """
-    Check if user is admin - VERIFIED & FIXED
-    Checks BOTH Config.ADMINS (includes owner) AND database
-    """
-    # First check Config.ADMINS (includes OWNER_ID)
-    if user_id in Config.ADMINS:
-        return True
-    
-    # Then check database
-    try:
-        admin = await self.admins.find_one({"user_id": user_id})
-        if admin:
+    async def add_admin(self, user_id: int):
+        """Add admin to database"""
+        admin_data = {
+            "user_id": user_id,
+            "added_date": datetime.datetime.now(datetime.timezone.utc)
+        }
+        
+        try:
+            await self.admins.update_one(
+                {"user_id": user_id},
+                {"$set": admin_data},
+                upsert=True
+            )
             return True
-    except Exception as e:
-        logger.error(f"Error checking admin status for {user_id}: {e}")
-    
-    # If both fail, user is not admin
-    return False
+        except Exception as e:
+            logger.error(f"Error adding admin {user_id}: {e}")
+            return False
 
-# ===================================
-# JOIN REQUESTS OPERATIONS
-# ===================================
+    async def remove_admin(self, user_id: int):
+        """Remove admin from database"""
+        try:
+            await self.admins.delete_one({"user_id": user_id})
+            return True
+        except Exception as e:
+            logger.error(f"Error removing admin {user_id}: {e}")
+            return False
 
-async def save_join_request(self, user_id: int, channel_id: int, status: str = "pending"):
-    """Save join request"""
-    request_data = {
-        "user_id": user_id,
-        "channel_id": channel_id,
-        "status": status,
-        "request_date": datetime.datetime.now(datetime.timezone.utc),
-        "processed_date": None if status == "pending" else datetime.datetime.now(datetime.timezone.utc)
-    }
-    
-    try:
-        await self.join_requests.update_one(
-            {"user_id": user_id, "channel_id": channel_id},
-            {"$set": request_data},
-            upsert=True
-        )
-        return True
-    except Exception as e:
-        logger.error(f"Error saving join request for {user_id}: {e}")
+    async def get_admins(self):
+        """Get all admins from database"""
+        try:
+            cursor = self.admins.find({})
+            admins = []
+            async for doc in cursor:
+                admins.append(doc["user_id"])
+            return admins
+        except Exception as e:
+            logger.error(f"Error getting admins: {e}")
+            return []
+
+    async def is_admin(self, user_id: int):
+        """
+        Check if user is admin - VERIFIED & FIXED
+        Checks BOTH Config.ADMINS (includes owner) AND database
+        """
+        # First check Config.ADMINS (includes OWNER_ID)
+        if user_id in Config.ADMINS:
+            return True
+        
+        # Then check database
+        try:
+            admin = await self.admins.find_one({"user_id": user_id})
+            if admin:
+                return True
+        except Exception as e:
+            logger.error(f"Error checking admin status for {user_id}: {e}")
+        
+        # If both fail, user is not admin
         return False
 
-async def get_pending_requests(self, channel_id: int = None):
-    """Get pending join requests"""
-    try:
-        query = {"status": "pending"}
-        if channel_id:
-            query["channel_id"] = channel_id
-        
-        cursor = self.join_requests.find(query)
-        requests = []
-        async for doc in cursor:
-            requests.append(doc)
-        return requests
-    except Exception as e:
-        logger.error(f"Error getting pending requests: {e}")
-        return []
+    # ===================================
+    # JOIN REQUESTS OPERATIONS
+    # ===================================
 
-async def update_request_status(self, user_id: int, channel_id: int, status: str):
-    """Update join request status"""
-    try:
-        await self.join_requests.update_one(
-            {"user_id": user_id, "channel_id": channel_id},
-            {"$set": {
-                "status": status,
-                "processed_date": datetime.datetime.now(datetime.timezone.utc)
-            }}
-        )
-        return True
-    except Exception as e:
-        logger.error(f"Error updating request status for {user_id}: {e}")
-        return False
+    async def save_join_request(self, user_id: int, channel_id: int, status: str = "pending"):
+        """Save join request"""
+        request_data = {
+            "user_id": user_id,
+            "channel_id": channel_id,
+            "status": status,
+            "request_date": datetime.datetime.now(datetime.timezone.utc),
+            "processed_date": None if status == "pending" else datetime.datetime.now(datetime.timezone.utc)
+        }
+        
+        try:
+            await self.join_requests.update_one(
+                {"user_id": user_id, "channel_id": channel_id},
+                {"$set": request_data},
+                upsert=True
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Error saving join request for {user_id}: {e}")
+            return False
 
-async def clean_old_join_requests(self):
-    """Clean join requests older than 24 hours"""
-    try:
-        cutoff_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=24)
-        
-        result = await self.join_requests.delete_many({
-            "request_date": {"$lt": cutoff_time}
-        })
-        
-        if result.deleted_count > 0:
-            logger.info(f"✓ Auto-cleaned {result.deleted_count} old join requests")
-            return result.deleted_count
-        else:
-            logger.info("✓ No old join requests to clean")
-            return 0
+    async def get_pending_requests(self, channel_id: int = None):
+        """Get pending join requests"""
+        try:
+            query = {"status": "pending"}
+            if channel_id:
+                query["channel_id"] = channel_id
             
-    except Exception as e:
-        logger.error(f"✗ Error cleaning old join requests: {e}")
-        return 0
+            cursor = self.join_requests.find(query)
+            requests = []
+            async for doc in cursor:
+                requests.append(doc)
+            return requests
+        except Exception as e:
+            logger.error(f"Error getting pending requests: {e}")
+            return []
+
+    async def update_request_status(self, user_id: int, channel_id: int, status: str):
+        """Update join request status"""
+        try:
+            await self.join_requests.update_one(
+                {"user_id": user_id, "channel_id": channel_id},
+                {"$set": {
+                    "status": status,
+                    "processed_date": datetime.datetime.now(datetime.timezone.utc)
+                }}
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Error updating request status for {user_id}: {e}")
+            return False
+
+    async def clean_old_join_requests(self):
+        """Clean join requests older than 24 hours"""
+        try:
+            cutoff_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=24)
+            
+            result = await self.join_requests.delete_many({
+                "request_date": {"$lt": cutoff_time}
+            })
+            
+            if result.deleted_count > 0:
+                logger.info(f"✓ Auto-cleaned {result.deleted_count} old join requests")
+                return result.deleted_count
+            else:
+                logger.info("✓ No old join requests to clean")
+                return 0
+                
+        except Exception as e:
+            logger.error(f"✗ Error cleaning old join requests: {e}")
+            return 0
 
 # ===================================
 # SECTION 4: HELPER FUNCTIONS (COMPLETELY FIXED & VERIFIED)
@@ -1270,7 +1275,7 @@ def create_auto_delete_text(auto_delete: bool, auto_delete_time: int, clean_conv
     blockquote_content = f'<blockquote><b>{settings_content}</b></blockquote>'
     
     return (
-        "<b> 🤖 𝗔𝗨𝗧𝗢 𝗗𝗘𝗟𝗘𝗧𝗘 𝗦𝗘𝗧𝗧𝗜𝗡𝗚𝗦 ⚙️ </b>\n\n"
+        "<b> 🤖 𝗔𝗨𝗧𝗢 𝗗𝗘𝗟𝗘𝗧𝗘 𝗦𝗘𝗧𝗧𝗜𝗇𝗚𝗦 ⚙️ </b>\n\n"
         f"{blockquote_content}\n"
         "<b> ᴄʟɪᴄᴋ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴs ᴛᴏ ᴄʜᴀɴɢᴇ sᴇᴛᴛɪɴɢs </b>"
     )
@@ -1532,136 +1537,135 @@ class Bot(Client):
         except Exception as e:
             logger.error(f"Error scheduling file deletion: {e}")
 
-
-async def _delete_file_after_delay(self, user_id: int, message_id: int, delay: int):
-    """
-    FEATURE 2: Auto Delete Files
-    
-    Internal method to delete file message after delay
-    """
-    try:
-        # Wait for the specified delay
-        await asyncio.sleep(delay)
+    async def _delete_file_after_delay(self, user_id: int, message_id: int, delay: int):
+        """
+        FEATURE 2: Auto Delete Files
         
-        # Delete the file message
-        await self.delete_messages(user_id, message_id)
-        logger.info(f"✓ Auto-deleted file message {message_id} for user {user_id}")
-        
-        # Remove from tracking
-        if user_id in self.user_file_messages:
-            self.user_file_messages[user_id] = [
-                msg for msg in self.user_file_messages[user_id]
-                if msg["message_id"] != message_id
-            ]
-            
-            # Clean up empty list
-            if not self.user_file_messages[user_id]:
-                del self.user_file_messages[user_id]
-        
-        # FEATURE 3: Show instruction after files are deleted
-        await self.show_instruction_after_deletion(user_id)
-        
-    except MessageDeleteForbidden:
-        logger.warning(f"Cannot delete file message {message_id} for user {user_id}")
-    except MessageIdInvalid:
-        logger.warning(f"File message {message_id} already deleted for user {user_id}")
-    except asyncio.CancelledError:
-        logger.info(f"File deletion cancelled for message {message_id}")
-    except Exception as e:
-        logger.error(f"Error deleting file message {message_id}: {e}")
-
-async def cancel_file_deletions(self, user_id: int):
-    """
-    FEATURE 2: Auto Delete Files
-    
-    Cancel all pending file deletions for a user
-    """
-    try:
-        if user_id in self.user_file_messages:
-            for msg_info in self.user_file_messages[user_id]:
-                task = msg_info.get("task")
-                if task and not task.done():
-                    task.cancel()
-            
-            del self.user_file_messages[user_id]
-            logger.info(f"✓ Cancelled all file deletions for user {user_id}")
-            
-    except Exception as e:
-        logger.error(f"Error cancelling file deletions for user {user_id}: {e}")
-
-# ===================================
-# FEATURE 3: SHOW INSTRUCTION METHODS
-# ===================================
-
-async def show_instruction_after_deletion(self, user_id: int):
-    """
-    FEATURE 3: Show Instruction After File Deletion
-    
-    Show instruction message with resend button after files are deleted
-    This message is NOT auto-deleted (stays permanently for user)
-    """
-    try:
-        # Check if instruction already shown
-        if user_id in self.user_instruction_message:
-            logger.debug(f"Instruction already shown for user {user_id}")
-            return
-        
-        # Get settings to check if this feature is enabled
-        settings = await self.db.get_settings()
-        show_instruction = settings.get("show_instruction", True)
-        
-        if not show_instruction:
-            logger.debug(f"Show instruction feature disabled")
-            return
-        
-        # Create instruction message
-        instruction_text = create_instruction_message(expandable=False)
-        
-        # Create resend button
-        buttons = [
-            [InlineKeyboardButton("🔄 GET FILES AGAIN", callback_data="resend_files")],
-            [InlineKeyboardButton("❌ CLOSE", callback_data="close_instruction")]
-        ]
-        keyboard = InlineKeyboardMarkup(buttons)
-        
-        # Send instruction message
+        Internal method to delete file message after delay
+        """
         try:
-            instruction_msg = await self.send_message(
-                user_id,
-                instruction_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
+            # Wait for the specified delay
+            await asyncio.sleep(delay)
             
-            # Store instruction message (NOT in clean conversation tracking)
-            self.user_instruction_message[user_id] = {
-                "message_id": instruction_msg.id,
-                "shown": True,
-                "timestamp": datetime.datetime.now(datetime.timezone.utc)
-            }
+            # Delete the file message
+            await self.delete_messages(user_id, message_id)
+            logger.info(f"✓ Auto-deleted file message {message_id} for user {user_id}")
             
-            logger.info(f"✓ Showed instruction message for user {user_id}")
+            # Remove from tracking
+            if user_id in self.user_file_messages:
+                self.user_file_messages[user_id] = [
+                    msg for msg in self.user_file_messages[user_id]
+                    if msg["message_id"] != message_id
+                ]
+                
+                # Clean up empty list
+                if not self.user_file_messages[user_id]:
+                    del self.user_file_messages[user_id]
             
+            # FEATURE 3: Show instruction after files are deleted
+            await self.show_instruction_after_deletion(user_id)
+            
+        except MessageDeleteForbidden:
+            logger.warning(f"Cannot delete file message {message_id} for user {user_id}")
+        except MessageIdInvalid:
+            logger.warning(f"File message {message_id} already deleted for user {user_id}")
+        except asyncio.CancelledError:
+            logger.info(f"File deletion cancelled for message {message_id}")
         except Exception as e:
-            logger.error(f"Error sending instruction message to user {user_id}: {e}")
+            logger.error(f"Error deleting file message {message_id}: {e}")
+
+    async def cancel_file_deletions(self, user_id: int):
+        """
+        FEATURE 2: Auto Delete Files
+        
+        Cancel all pending file deletions for a user
+        """
+        try:
+            if user_id in self.user_file_messages:
+                for msg_info in self.user_file_messages[user_id]:
+                    task = msg_info.get("task")
+                    if task and not task.done():
+                        task.cancel()
+                
+                del self.user_file_messages[user_id]
+                logger.info(f"✓ Cancelled all file deletions for user {user_id}")
+                
+        except Exception as e:
+            logger.error(f"Error cancelling file deletions for user {user_id}: {e}")
+
+    # ===================================
+    # FEATURE 3: SHOW INSTRUCTION METHODS
+    # ===================================
+
+    async def show_instruction_after_deletion(self, user_id: int):
+        """
+        FEATURE 3: Show Instruction After File Deletion
+        
+        Show instruction message with resend button after files are deleted
+        This message is NOT auto-deleted (stays permanently for user)
+        """
+        try:
+            # Check if instruction already shown
+            if user_id in self.user_instruction_message:
+                logger.debug(f"Instruction already shown for user {user_id}")
+                return
             
-    except Exception as e:
-        logger.error(f"Error in show_instruction_after_deletion: {e}")
+            # Get settings to check if this feature is enabled
+            settings = await self.db.get_settings()
+            show_instruction = settings.get("show_instruction", True)
+            
+            if not show_instruction:
+                logger.debug(f"Show instruction feature disabled")
+                return
+            
+            # Create instruction message
+            instruction_text = create_instruction_message(expandable=False)
+            
+            # Create resend button
+            buttons = [
+                [InlineKeyboardButton("🔄 GET FILES AGAIN", callback_data="resend_files")],
+                [InlineKeyboardButton("❌ CLOSE", callback_data="close_instruction")]
+            ]
+            keyboard = InlineKeyboardMarkup(buttons)
+            
+            # Send instruction message
+            try:
+                instruction_msg = await self.send_message(
+                    user_id,
+                    instruction_text,
+                    reply_markup=keyboard,
+                    parse_mode=enums.ParseMode.HTML
+                )
+                
+                # Store instruction message (NOT in clean conversation tracking)
+                self.user_instruction_message[user_id] = {
+                    "message_id": instruction_msg.id,
+                    "shown": True,
+                    "timestamp": datetime.datetime.now(datetime.timezone.utc)
+                }
+                
+                logger.info(f"✓ Showed instruction message for user {user_id}")
+                
+            except Exception as e:
+                logger.error(f"Error sending instruction message to user {user_id}: {e}")
+                
+        except Exception as e:
+            logger.error(f"Error in show_instruction_after_deletion: {e}")
 
-async def clear_instruction_message(self, user_id: int):
-    """
-    FEATURE 3: Show Instruction
-    
-    Clear instruction message tracking (does not delete the message)
-    """
-    try:
-        if user_id in self.user_instruction_message:
-            del self.user_instruction_message[user_id]
-            logger.debug(f"✓ Cleared instruction tracking for user {user_id}")
-    except Exception as e:
-        logger.error(f"Error clearing instruction for user {user_id}: {e}")
+    async def clear_instruction_message(self, user_id: int):
+        """
+        FEATURE 3: Show Instruction
+        
+        Clear instruction message tracking (does not delete the message)
+        """
+        try:
+            if user_id in self.user_instruction_message:
+                del self.user_instruction_message[user_id]
+                logger.debug(f"✓ Cleared instruction tracking for user {user_id}")
+        except Exception as e:
+            logger.error(f"Error clearing instruction for user {user_id}: {e}")
 
-# ===================================
+    # ===================================
     # FILE HISTORY TRACKING
     # ===================================
     
@@ -2191,7 +2195,7 @@ async def clear_instruction_message(self, user_id: int):
         logger.info("✓ All handlers registered successfully")
         logger.info("=" * 70)
 
-# ===================================
+    # ===================================
     # START COMMAND WITH THREE AUTO-DELETE FEATURES
     # ===================================
     
@@ -2756,7 +2760,7 @@ async def clear_instruction_message(self, user_id: int):
         # FEATURE 1: Store this message for future deletion
         await self.store_bot_message(user_id, response.id)
 
-# ===================================
+    # ===================================
     # CALLBACK QUERY HANDLER (FIXED - CRITICAL)
     # ===================================
     
@@ -3329,7 +3333,7 @@ async def clear_instruction_message(self, user_id: int):
             logger.error(f"Error removing channel: {e}")
             await query.answer("❌ Error removing channel!", show_alert=True)
 
-# ===================================
+    # ===================================
     # UTILITY COMMANDS
     # ===================================
 
@@ -3575,112 +3579,112 @@ async def clear_instruction_message(self, user_id: int):
             response =await message.reply(f"❌ <b>Error fetching logs:</b>\n<code>{str(e)}</code>",
             parse_mode=enums.ParseMode.HTML
             )
+            await self.store_bot_message(user_id, response.id)
+
+    async def shortener_command(self, message: Message):
+        """
+        Handle /shortener command - URL shortener settings
+        
+        IMPLEMENTS: FEATURE 1 (Clean Conversation)
+        """
+        user_id = message.from_user.id
+        
+        # Check admin permission
+        if not await self.is_user_admin(user_id):
+            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
+            return
+
+        # FEATURE 1: Delete previous bot message
+        settings = await self.db.get_settings()
+        if settings.get("clean_conversation", True):
+            await self.delete_previous_bot_message(user_id)
+
+        # Get shortener settings
+        shortener_url = Config.SHORTENER_URL
+        shortener_api = Config.SHORTENER_API
+
+        status = "✅ <b>ENABLED</b>" if shortener_url and shortener_api else "❌ <b>DISABLED</b>"
+
+        shortener_text = (
+            "<b>🔗 URL SHORTENER SETTINGS</b>\n\n"
+            f"<blockquote>"
+            f"<b>Status:</b> {status}\n"
+            f"<b>Shortener URL:</b> {shortener_url if shortener_url else 'Not set'}\n"
+            f"<b>API Key:</b> {'Set' if shortener_api else 'Not set'}"
+            f"</blockquote>\n\n"
+            f"<i>Configure shortener in environment variables:\n"
+            f"• SHORTENER_URL\n"
+            f"• SHORTENER_API</i>"
+        )
+
+        buttons = [
+            [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu")],
+            [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
+        ]
+
+        keyboard = InlineKeyboardMarkup(buttons)
+
+        response = await message.reply(
+            shortener_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+
+        # FEATURE 1: Store this message for future deletion
         await self.store_bot_message(user_id, response.id)
 
-async def shortener_command(self, message: Message):
-    """
-    Handle /shortener command - URL shortener settings
-    
-    IMPLEMENTS: FEATURE 1 (Clean Conversation)
-    """
-    user_id = message.from_user.id
-    
-    # Check admin permission
-    if not await self.is_user_admin(user_id):
-        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+    async def font_command(self, message: Message):
+        """
+        Handle /font command - Font style settings
+        
+        IMPLEMENTS: FEATURE 1 (Clean Conversation)
+        """
+        user_id = message.from_user.id
+        
+        # Check admin permission
+        if not await self.is_user_admin(user_id):
+            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
+            return
+
+        # FEATURE 1: Delete previous bot message
+        settings = await self.db.get_settings()
+        if settings.get("clean_conversation", True):
+            await self.delete_previous_bot_message(user_id)
+
+        font_text = (
+            "<b>🔤 FONT STYLES</b>\n\n"
+            "<blockquote expandable>"
+            "<b>Available Styles:</b>\n\n"
+            "• <b>Bold</b> - Use <code>&lt;b&gt;text&lt;/b&gt;</code>\n"
+            "• <i>Italic</i> - Use <code>&lt;i&gt;text&lt;/i&gt;</code>\n"
+            "• <u>Underline</u> - Use <code>&lt;u&gt;text&lt;/u&gt;</code>\n"
+            "• <s>Strikethrough</s> - Use <code>&lt;s&gt;text&lt;/s&gt;</code>\n"
+            "• <code>Code</code> - Use <code>&lt;code&gt;text&lt;/code&gt;</code>\n"
+            "• <blockquote>Blockquote</blockquote> - Use <code>&lt;blockquote&gt;text&lt;/blockquote&gt;</code>\n"
+            "• <blockquote expandable>Expandable</blockquote> - Use <code>&lt;blockquote expandable&gt;text&lt;/blockquote&gt;</code>\n"
+            "</blockquote>\n\n"
+            "<i>Use these styles in custom messages!</i>"
+        )
+
+        buttons = [
+            [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu")],
+            [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
+        ]
+
+        keyboard = InlineKeyboardMarkup(buttons)
+
+        response = await message.reply(
+            font_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+
+        # FEATURE 1: Store this message for future deletion
         await self.store_bot_message(user_id, response.id)
-        return
 
-    # FEATURE 1: Delete previous bot message
-    settings = await self.db.get_settings()
-    if settings.get("clean_conversation", True):
-        await self.delete_previous_bot_message(user_id)
-
-    # Get shortener settings
-    shortener_url = Config.SHORTENER_URL
-    shortener_api = Config.SHORTENER_API
-
-    status = "✅ <b>ENABLED</b>" if shortener_url and shortener_api else "❌ <b>DISABLED</b>"
-
-    shortener_text = (
-        "<b>🔗 URL SHORTENER SETTINGS</b>\n\n"
-        f"<blockquote>"
-        f"<b>Status:</b> {status}\n"
-        f"<b>Shortener URL:</b> {shortener_url if shortener_url else 'Not set'}\n"
-        f"<b>API Key:</b> {'Set' if shortener_api else 'Not set'}"
-        f"</blockquote>\n\n"
-        f"<i>Configure shortener in environment variables:\n"
-        f"• SHORTENER_URL\n"
-        f"• SHORTENER_API</i>"
-    )
-
-    buttons = [
-        [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu")],
-        [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
-    ]
-
-    keyboard = InlineKeyboardMarkup(buttons)
-
-    response = await message.reply(
-        shortener_text,
-        reply_markup=keyboard,
-        parse_mode=enums.ParseMode.HTML
-    )
-
-    # FEATURE 1: Store this message for future deletion
-    await self.store_bot_message(user_id, response.id)
-
-async def font_command(self, message: Message):
-    """
-    Handle /font command - Font style settings
-    
-    IMPLEMENTS: FEATURE 1 (Clean Conversation)
-    """
-    user_id = message.from_user.id
-    
-    # Check admin permission
-    if not await self.is_user_admin(user_id):
-        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-        await self.store_bot_message(user_id, response.id)
-        return
-
-    # FEATURE 1: Delete previous bot message
-    settings = await self.db.get_settings()
-    if settings.get("clean_conversation", True):
-        await self.delete_previous_bot_message(user_id)
-
-    font_text = (
-        "<b>🔤 FONT STYLES</b>\n\n"
-        "<blockquote expandable>"
-        "<b>Available Styles:</b>\n\n"
-        "• <b>Bold</b> - Use <code>&lt;b&gt;text&lt;/b&gt;</code>\n"
-        "• <i>Italic</i> - Use <code>&lt;i&gt;text&lt;/i&gt;</code>\n"
-        "• <u>Underline</u> - Use <code>&lt;u&gt;text&lt;/u&gt;</code>\n"
-        "• <s>Strikethrough</s> - Use <code>&lt;s&gt;text&lt;/s&gt;</code>\n"
-        "• <code>Code</code> - Use <code>&lt;code&gt;text&lt;/code&gt;</code>\n"
-        "• <blockquote>Blockquote</blockquote> - Use <code>&lt;blockquote&gt;text&lt;/blockquote&gt;</code>\n"
-        "• <blockquote expandable>Expandable</blockquote> - Use <code>&lt;blockquote expandable&gt;text&lt;/blockquote&gt;</code>\n"
-        "</blockquote>\n\n"
-        "<i>Use these styles in custom messages!</i>"
-    )
-
-    buttons = [
-        [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu")],
-        [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
-    ]
-
-    keyboard = InlineKeyboardMarkup(buttons)
-
-    response = await message.reply(
-        font_text,
-        reply_markup=keyboard,
-        parse_mode=enums.ParseMode.HTML
-    )
-
-    # FEATURE 1: Store this message for future deletion
-    await self.store_bot_message(user_id, response.id)
-
-# ===================================
+    # ===================================
     # ADMIN MANAGEMENT COMMANDS
     # ===================================
     
@@ -4907,6 +4911,7 @@ async def font_command(self, message: Message):
             logger.error(f"Error in stats command: {e}")
             response = await message.reply("❌ <b>Error fetching statistics!</b>", parse_mode=enums.ParseMode.HTML)
             await self.store_bot_message(user_id, response.id)
+
     # ===================================
     # BROADCAST COMMAND
     # ===================================
