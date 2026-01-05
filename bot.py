@@ -6423,8 +6423,7 @@ async def main():
             logger.error("Failed to start bot. Exiting.")
             return
         
-        # Set up callback handler
-        await bot.setup_callbacks()
+        # REMOVED: await bot.setup_callbacks()  # This method doesn't exist
         
         logger.info("✅ Bot is now running with Enhanced Auto-Delete!")
         logger.info("✅ Only deletes conversation messages")
@@ -6463,7 +6462,7 @@ async def main():
             logger.info("✅ Web server stopped")
         
         logger.info("👋 Bot stopped successfully.")
-
+        
 if __name__ == "__main__":
     # Run the bot
     asyncio.run(main())
