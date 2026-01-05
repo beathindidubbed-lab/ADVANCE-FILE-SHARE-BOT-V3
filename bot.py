@@ -3397,10 +3397,10 @@ class Bot(Client):
             "📋 <b>BOT COMMANDS</b>\n\n"
             "<b>✨ BASIC COMMANDS:</b>\n"
             "<blockquote>"
-            "• <code>/start</code> - Start bot\n"
-            "• <code>/help</code> - Show help\n"
-            "• <code>/ping</code> - Check status\n"
-            "• <code>/about</code> - About bot"
+            "• /start - Start bot\n"
+            "• /help - Show help\n"
+            "• /ping - Check status\n"
+            "• /about - About bot"
             "</blockquote>"
         )
 
@@ -3409,42 +3409,42 @@ class Bot(Client):
                 "\n<b>👑 ADMIN COMMANDS:</b>\n"
                 "<blockquote expandable>"
                 "<b>📊 Statistics:</b>\n"
-                "• <code>/stats</code> - View statistics\n"
-                "• <code>/users</code> - User stats\n"
-                "• <code>/refresh</code> - Refresh stats\n\n"
+                "• /stats - View statistics\n"
+                "• /users - User stats\n"
+                "• /refresh< - Refresh stats\n\n"
                 "<b>🔗 File Management:</b>\n"
-                "• <code>/genlink</code> - Generate link\n"
-                "• <code>/getlink</code> - Get link (reply to file)\n"
-                "• <code>/batch</code> - Store multiple files\n"
-                "• <code>/custom_batch</code> - Custom batch\n"
-                "• <code>/special_link</code> - Special link\n"
-                "• <code>/done</code> - Finish batch\n\n"
+                "• /genlink - Generate link\n"
+                "• /getlink - Get link (reply to file)\n"
+                "• /batch - Store multiple files\n"
+                "• /custom_batch - Custom batch\n"
+                "• /special_link - Special link\n"
+                "• /done - Finish batch\n\n"
                 "<b>⚙️ Settings:</b>\n"
-                "• <code>/settings</code> - Bot settings panel\n"
-                "• <code>/files</code> - File settings\n"
-                "• <code>/auto_del</code> - Auto delete settings\n"
-                "• <code>/forcesub</code> - Force sub settings\n"
-                "• <code>/botsettings</code> - Bot message settings\n\n"
+                "• /settings - Bot settings panel\n"
+                "• /files - File settings\n"
+                "• /auto_del - Auto delete settings\n"
+                "• /forcesub - Force sub settings\n"
+                "• /botsettings - Bot message settings\n\n"
                 "<b>👥 User Management:</b>\n"
-                "• <code>/broadcast</code> - Send broadcast\n"
-                "• <code>/ban</code> - Ban user\n"
-                "• <code>/unban</code> - Unban user\n"
-                "• <code>/banuser_list</code> - Banned users\n\n"
+                "• /broadcast - Send broadcast\n"
+                "• /ban - Ban user\n"
+                "• /unban - Unban user\n"
+                "• /banuser_list - Banned users\n\n"
                 "<b>👑 Admin Management:</b>\n"
-                "• <code>/admin_list</code> - Admin commands\n"
-                "• <code>/add_admins</code> - Add admins\n"
-                "• <code>/del_admins</code> - Remove admins\n\n"
+                "• /admin_list - Admin commands\n"
+                "• /add_admins - Add admins\n"
+                "• /del_admins - Remove admins\n\n"
                 "<b>📢 Channel Management:</b>\n"
-                "• <code>/setchannel</code> - Set DB channel\n"
-                "• <code>/checkchannel</code> - Check channel\n"
-                "• <code>/removechannel</code> - Remove channel\n"
-                "• <code>/fsub_chnl</code> - FSub channels\n"
-                "• <code>/add_fsub</code> - Add FSub channel\n"
-                "• <code>/del_fsub</code> - Remove FSub channel\n\n"
+                "• /setchannel - Set DB channel\n"
+                "• /checkchannel - Check channel\n"
+                "• /removechannel - Remove channel\n"
+                "• /fsub_chnl - FSub channels\n"
+                "• /add_fsub - Add FSub channel\n"
+                "• /del_fsub - Remove FSub channel\n\n"
                 "<b>🛠️ Other:</b>\n"
-                "• <code>/logs</code> - View logs\n"
-                "• <code>/shortener</code> - URL shortener\n"
-                "• <code>/font</code> - Font styles"
+                "• /logs - View logs\n"
+                "• /shortener - URL shortener\n"
+                "• /font - Font styles"
                 "</blockquote>\n\n"
                 "<i>💡 Click buttons below to navigate</i>"
             )
@@ -5220,47 +5220,305 @@ class Bot(Client):
         # Alias for genlink_command
         await self.genlink_command(message)
 
-    async def batch_command(self, message: Message):
-        """Handle /batch command"""
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
+    # FIXED BATCH COMMAND CODE
+# Add this to replace the existing batch_command method in bot.py
 
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
+async def batch_command(self, message: Message):
+    """
+    Handle /batch command - First/Last Message Method
+    
+    IMPLEMENTS: FEATURE 1 (Clean Conversation)
+    """
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
 
-        if not self.db_channel:
-            response = await message.reply("❌ <b>Set database channel first!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
 
-        # Initialize batch state
-        self.batch_state[user_id] = {
-            "files": [],
-            "count": 0,
-            "limit": MAX_BATCH_SIZE
-        }
+    if not self.db_channel:
+        response = await message.reply("❌ <b>Set database channel first!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
 
+    # Initialize batch state with FIRST/LAST method
+    self.batch_state[user_id] = {
+        "method": "first_last",  # NEW: Method identifier
+        "step": "waiting_first",  # NEW: Current step
+        "first_msg_id": None,
+        "last_msg_id": None,
+        "channel_id": self.db_channel
+    }
+
+    response = await message.reply(
+        "📁 <b>BATCH MODE STARTED</b>\n\n"
+        "<blockquote>"
+        f"<b>Method:</b> First/Last Message\n"
+        f"<b>Max files:</b> {MAX_BATCH_SIZE}\n\n"
+        f"<b>📝 Step 1:</b>\n"
+        "Go to your database channel and forward the <b>FIRST message</b> (starting file) to me.\n\n"
+        f"<i>Example: If you want Episodes 1-50, forward Episode 1</i>"
+        "</blockquote>",
+        parse_mode=enums.ParseMode.HTML
+    )
+
+    await self.store_bot_message(user_id, response.id)
+
+
+# ADD THIS NEW METHOD to handle batch messages
+async def handle_batch_message(self, message: Message):
+    """
+    Handle forwarded messages in batch mode
+    """
+    user_id = message.from_user.id
+    
+    if user_id not in self.batch_state:
+        return
+    
+    state = self.batch_state[user_id]
+    
+    # Check if message is forwarded from database channel
+    if not message.forward_from_chat:
         response = await message.reply(
-            "📁 <b>BATCH MODE STARTED</b>\n\n"
+            "❌ <b>Please forward a message from your database channel!</b>\n\n"
+            "<i>Don't send new files. Forward existing messages from the channel.</i>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    # Verify it's from the correct channel
+    if message.forward_from_chat.id != self.db_channel:
+        response = await message.reply(
+            f"❌ <b>Wrong channel!</b>\n\n"
+            f"Forward from your database channel: <code>{self.db_channel}</code>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    # Get the original message ID
+    msg_id = message.forward_from_message_id
+    
+    # Handle based on current step
+    if state["step"] == "waiting_first":
+        # Store first message ID
+        state["first_msg_id"] = msg_id
+        state["step"] = "waiting_last"
+        
+        response = await message.reply(
+            "✅ <b>First message received!</b>\n\n"
             "<blockquote>"
-            f"<b>Max files:</b> {MAX_BATCH_SIZE}\n"
-            f"<b>How to use:</b>\n"
-            "1. Reply to files with file IDs\n"
-            "2. Send /done when finished\n"
-            "3. Or send /cancel to cancel"
+            f"<b>📍 Message ID:</b> <code>{msg_id}</code>\n\n"
+            f"<b>📝 Step 2:</b>\n"
+            "Now forward the <b>LAST message</b> (ending file) from the same channel.\n\n"
+            f"<i>Example: If you want Episodes 1-50, forward Episode 50</i>\n\n"
+            "💡 <b>Tip:</b> All messages between first and last will be included!"
             "</blockquote>",
             parse_mode=enums.ParseMode.HTML
         )
-
         await self.store_bot_message(user_id, response.id)
+    
+    elif state["step"] == "waiting_last":
+        # Store last message ID
+        state["last_msg_id"] = msg_id
+        
+        # Validate range
+        first_id = state["first_msg_id"]
+        last_id = msg_id
+        
+        if last_id <= first_id:
+            response = await message.reply(
+                "❌ <b>Invalid range!</b>\n\n"
+                "<blockquote>"
+                f"Last message ID ({last_id}) must be greater than first message ID ({first_id}).\n\n"
+                "Please forward a message that comes <b>after</b> the first message."
+                "</blockquote>",
+                parse_mode=enums.ParseMode.HTML
+            )
+            await self.store_bot_message(user_id, response.id)
+            return
+        
+        # Calculate total files
+        total_files = last_id - first_id + 1
+        
+        if total_files > MAX_BATCH_SIZE:
+            response = await message.reply(
+                f"❌ <b>Too many files!</b>\n\n"
+                f"<blockquote>"
+                f"Range: {first_id} to {last_id} = <b>{total_files} files</b>\n"
+                f"Maximum: <b>{MAX_BATCH_SIZE} files</b>\n\n"
+                f"Please select a smaller range."
+                f"</blockquote>",
+                parse_mode=enums.ParseMode.HTML
+            )
+            await self.store_bot_message(user_id, response.id)
+            return
+        
+        # Generate batch link
+        try:
+            # Create list of all message IDs in range
+            file_ids = list(range(first_id, last_id + 1))
+            
+            # Encode the range (more efficient than listing all IDs)
+            encoded = await encode(f"{first_id}-{last_id}")
+            
+            bot_username = Config.BOT_USERNAME
+            link = f"https://t.me/{bot_username}?start=batch_{encoded}"
+            
+            response = await message.reply(
+                f"✅ <b>BATCH LINK GENERATED!</b>\n\n"
+                f"<blockquote>"
+                f"<b>📊 Range:</b> {first_id} to {last_id}\n"
+                f"<b>📁 Total Files:</b> {total_files}\n"
+                f"<b>📺 Channel:</b> <code>{self.db_channel}</code>\n\n"
+                f"<b>🔗 Share Link:</b>\n"
+                f"<code>{link}</code>"
+                f"</blockquote>\n\n"
+                f"<i>Users who click this link will receive all {total_files} files!</i>",
+                parse_mode=enums.ParseMode.HTML,
+                disable_web_page_preview=True
+            )
+            
+            # Clear state
+            del self.batch_state[user_id]
+            
+            await self.store_bot_message(user_id, response.id)
+            
+        except Exception as e:
+            logger.error(f"Error generating batch link: {e}")
+            response = await message.reply("❌ <b>Error generating link!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
 
+
+# ALSO UPDATE handle_batch_link to support range format
+async def handle_batch_link(self, message: Message, batch_id: str):
+    """
+    Handle batch file link - SUPPORTS BOTH FORMATS
+    
+    Format 1: batch_ABC123 (comma-separated IDs)
+    Format 2: batch_XYZ789 (range: first-last)
+    
+    IMPLEMENTS: ALL THREE AUTO-DELETE FEATURES
+    """
+    try:
+        user_id = message.from_user.id
+        
+        # Decode batch data
+        decoded = await decode(batch_id)
+        if not decoded:
+            error_msg = await message.reply("❌ <b>Invalid batch link!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, error_msg.id)
+            return
+        
+        # Check if it's a range format (first-last) or comma-separated
+        if "-" in decoded and "," not in decoded:
+            # Range format: "100-150"
+            try:
+                first, last = decoded.split("-")
+                first_id = int(first)
+                last_id = int(last)
+                file_ids = list(range(first_id, last_id + 1))
+            except:
+                error_msg = await message.reply("❌ <b>Invalid batch format!</b>", parse_mode=enums.ParseMode.HTML)
+                await self.store_bot_message(user_id, error_msg.id)
+                return
+        else:
+            # Comma-separated format: "123,124,125"
+            file_ids = [int(x) for x in decoded.split(",") if x.isdigit()]
+        
+        if not file_ids:
+            error_msg = await message.reply("❌ <b>No files found in batch!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, error_msg.id)
+            return
+        
+        # Limit to MAX_BATCH_SIZE
+        file_ids = file_ids[:MAX_BATCH_SIZE]
+        
+        # Send progress message
+        progress_msg = await message.reply(
+            f"📤 <b>Sending {len(file_ids)} files...</b>\n\n"
+            f"<i>Please wait...</i>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        
+        # Send files
+        sent_file_ids = []
+        sent_message_ids = []
+        failed_count = 0
+        
+        for i, file_id in enumerate(file_ids, 1):
+            try:
+                response = await self.copy_message(
+                    chat_id=message.chat.id,
+                    from_chat_id=self.db_channel,
+                    message_id=file_id,
+                    protect_content=self.settings.get("protect_content", True)
+                )
+                sent_file_ids.append(file_id)
+                sent_message_ids.append(response.id)
+                
+                # FEATURE 2: Schedule file for auto-deletion if enabled
+                settings = await self.db.get_settings()
+                auto_delete = settings.get("auto_delete", False)
+                if auto_delete:
+                    delete_time = settings.get("auto_delete_time", 300)
+                    await self.schedule_file_deletion(user_id, response.id, delete_time)
+                
+                # Update progress every 10 files
+                if i % 10 == 0:
+                    try:
+                        await progress_msg.edit_text(
+                            f"📤 <b>Sending files...</b>\n\n"
+                            f"<b>Progress:</b> {i}/{len(file_ids)}\n"
+                            f"<i>Please wait...</i>",
+                            parse_mode=enums.ParseMode.HTML
+                        )
+                    except:
+                        pass
+                
+            except Exception as e:
+                logger.error(f"Error sending file {file_id}: {e}")
+                failed_count += 1
+                continue
+        
+        # Delete progress message
+        try:
+            await progress_msg.delete()
+        except:
+            pass
+        
+        # Track files for potential resend
+        if sent_file_ids:
+            await self.track_user_files(user_id, sent_file_ids)
+        
+        # Send completion message
+        if sent_file_ids:
+            success_msg = await message.reply(
+                f"✅ <b>Batch sent successfully!</b>\n\n"
+                f"<blockquote>"
+                f"<b>📁 Total files:</b> {len(file_ids)}\n"
+                f"<b>✅ Sent:</b> {len(sent_file_ids)}\n"
+                f"<b>❌ Failed:</b> {failed_count}"
+                f"</blockquote>",
+                parse_mode=enums.ParseMode.HTML
+            )
+            # FEATURE 1: Store for clean conversation
+            await self.store_bot_message(user_id, success_msg.id)
+        else:
+            error_msg = await message.reply("❌ <b>Failed to send any files!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, error_msg.id)
+        
+    except Exception as e:
+        logger.error(f"Error handling batch link: {e}")
+        error_msg = await message.reply("❌ <b>Batch not found or access denied!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(message.from_user.id, error_msg.id)
     async def custom_batch_command(self, message: Message):
         """Handle /custom_batch command"""
         user_id = message.from_user.id
