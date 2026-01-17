@@ -22,6 +22,8 @@ register_all_handlers(bot)
 
 from .admin import register_admin_handlers
 from .settings import register_settings_handlers
+from .fsub import register_fsub_handlers
+from .messages import register_message_handlers
 
 def register_all_handlers(bot):
     """
@@ -36,15 +38,21 @@ def register_all_handlers(bot):
     # Register settings handlers
     register_settings_handlers(bot)
     
-    # TODO: Add other handler registrations as they're created
+    # Register force subscribe handlers
+    register_fsub_handlers(bot)
+    
+    # Register message handlers (must be last - catches non-command text)
+    register_message_handlers(bot)
+    
+    # TODO: Add remaining handler registrations
     # register_start_handlers(bot)
     # register_file_handlers(bot)
-    # register_fsub_handlers(bot)
     # register_callback_handlers(bot)
-    # register_message_handlers(bot)
 
 __all__ = [
     'register_all_handlers',
     'register_admin_handlers',
     'register_settings_handlers',
+    'register_fsub_handlers',
+    'register_message_handlers',
 ]
