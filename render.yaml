@@ -5,8 +5,15 @@ services:
     region: oregon
     plan: free
     branch: main
+    
+    # BUILD COMMAND
     buildCommand: pip install -r requirements.txt
-    startCommand: python3 bot.py
+    
+    # START COMMAND (CHOOSE ONE BASED ON YOUR STRUCTURE)
+    startCommand: python3 main.py        # For modular structure
+    # startCommand: python bot.py       # For original structure
+    
+    # ENVIRONMENT VARIABLES
     envVars:
       - key: API_ID
         sync: false
@@ -37,7 +44,7 @@ services:
       - key: HIDE_CAPTION
         value: "False"
       - key: AUTO_DELETE_TIME
-        value: "0"
+        value: "300"
       - key: REQUEST_FSUB
         value: "False"
       - key: WORKERS
