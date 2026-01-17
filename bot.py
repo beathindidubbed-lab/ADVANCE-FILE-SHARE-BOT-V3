@@ -1330,7 +1330,7 @@ def verify_three_autodelete_features():
     logger.info("=" * 70)
     
     return {
-        "clean_conversation": Config.CLEAN_CONVERSation,
+        "clean_conversation": Config.CLEAN_CONVERSATION,
         "auto_delete": Config.AUTO_DELETE,
         "auto_delete_time": Config.AUTO_DELETE_TIME,
         "show_instruction": Config.SHOW_INSTRUCTION_AFTER_DELETE
