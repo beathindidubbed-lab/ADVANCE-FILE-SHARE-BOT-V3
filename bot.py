@@ -5,10 +5,11 @@
 Three Auto-Delete Features + Blockquote Expandable Support
 All Issues Fixed - Ready to Deploy
 FIXED ISSUES:
-1. Bot admin check ✅ - FIXED
-2. File link generation ✅  
-3. del_fsub_menu callback ✅
-4. THREE CRITICAL BUGS FIXED ✅
+1. Bot admin check ✓ - FIXED
+2. File link generation ✓  
+3. del_fsub_menu callback ✓
+4. THREE CRITICAL BUGS FIXED ✓
+5. BLOCKQUOTE EXPANDABLE SUPPORT ✓
 """
 
 # ===================================
@@ -103,7 +104,7 @@ DEFAULT_BOT_PICS = [
 ]
 
 # Start Command Reactions
-REACTIONS = ["😍", "😇", "😘", "😊", "👋", "😀", "😎", "🥰", "😜", "🤩", "🤗"]
+REACTIONS = ["🙋", "🙌", "🙆", "🙅", "👋", "🙂", "🙃", "🍩", "🙈", "🤩", "🤖"]
 
 # Bot Commands Configuration
 BOT_COMMANDS = {
@@ -316,7 +317,7 @@ class Config:
                 logger.error(f"  - {error}")
             return False
         
-        logger.info("✓ Configuration validated successfully")
+        logger.info("✅ Configuration validated successfully")
         return True
     
     @classmethod
@@ -332,9 +333,9 @@ class Config:
         logger.info(f"Force Sub Channels: {len(cls.FORCE_SUB_CHANNELS)} channels")
         logger.info("=" * 60)
         logger.info("THREE AUTO-DELETE FEATURES CONFIGURED:")
-        logger.info(f"✓ Feature 1 - Clean Conversation: {cls.CLEAN_CONVERSATION}")
-        logger.info(f"✓ Feature 2 - Auto Delete Files: {cls.AUTO_DELETE} ({cls.AUTO_DELETE_TIME}s)")
-        logger.info(f"✓ Feature 3 - Show Instruction: {cls.SHOW_INSTRUCTION_AFTER_DELETE}")
+        logger.info(f"✅ Feature 1 - Clean Conversation: {cls.CLEAN_CONVERSATION}")
+        logger.info(f"✅ Feature 2 - Auto Delete Files: {cls.AUTO_DELETE} ({cls.AUTO_DELETE_TIME}s)")
+        logger.info(f"✅ Feature 3 - Show Instruction: {cls.SHOW_INSTRUCTION_AFTER_DELETE}")
         logger.info("=" * 60)
 
 # ===================================
@@ -382,18 +383,18 @@ class Database:
             await self.admins.create_index("user_id", unique=True)
             await self.join_requests.create_index([("user_id", 1), ("channel_id", 1)], unique=True)
             
-            logger.info("✓ Connected to MongoDB successfully")
+            logger.info("✅ Connected to MongoDB successfully")
             return True
             
         except Exception as e:
-            logger.error(f"✗ MongoDB connection failed: {e}")
+            logger.error(f"❌ MongoDB connection failed: {e}")
             return False
     
     async def close(self):
         """Close database connection"""
         if self.client:
             self.client.close()
-            logger.info("✓ MongoDB connection closed")
+            logger.info("✅ MongoDB connection closed")
     
     # ===================================
     # USER OPERATIONS
@@ -610,7 +611,7 @@ class Database:
                     "auto_clean_join_requests": Config.AUTO_CLEAN_JOIN_REQUESTS
                 }
                 await self.save_settings(default_settings)
-                logger.info("✓ Created default settings with THREE auto-delete features")
+                logger.info("✅ Created default settings with THREE auto-delete features")
                 return default_settings
             return settings
         except Exception as e:
@@ -873,14 +874,14 @@ class Database:
             })
             
             if result.deleted_count > 0:
-                logger.info(f"✓ Auto-cleaned {result.deleted_count} old join requests")
+                logger.info(f"✅ Auto-cleaned {result.deleted_count} old join requests")
                 return result.deleted_count
             else:
-                logger.info("✓ No old join requests to clean")
+                logger.info("✅ No old join requests to clean")
                 return 0
                 
         except Exception as e:
-            logger.error(f"✗ Error cleaning old join requests: {e}")
+            logger.error(f"❌ Error cleaning old join requests: {e}")
             return 0
 
 # ===================================
@@ -1175,11 +1176,9 @@ def create_welcome_text(user_name: str, custom_text: str = None, expandable: boo
         "TO KNOW DETAILED INFORMATION CLICK ABOUT ME BUTTON TO KNOW MY ALL ADVANCE FEATURES"
     )
     
-    blockquote_content = format_text_with_blockquote(welcome_msg, expandable=expandable)
-    
     return (
-        f"⚡ <b>Hey, {user_name} ~</b>\n\n"
-        f"{blockquote_content}"
+        f"🔰 <b>Hey, {user_name} ~</b>\n\n"
+        f"<blockquote expandable>{welcome_msg}</blockquote>"
     )
 
 def create_help_text(user_name: str, custom_text: str = None, expandable: bool = True) -> str:
@@ -1195,21 +1194,20 @@ def create_help_text(user_name: str, custom_text: str = None, expandable: bool =
     
     # Default help message
     help_msg = (
-        "➪ I ᴀᴍ ᴀ ᴘʀɪᴠᴀᴛᴇ ғɪʟᴇ sʜᴀʀɪɴɢ ʙᴏᴛ, ᴍᴇᴀɴᴛ ᴛᴏ ᴘʀᴏᴠɪᴅᴇ ғɪʟᴇs ᴀɴᴅ ɴᴇᴄᴇssᴀʀʏ sᴛᴜғғ ᴛʜʀᴏᴜɢʜ sᴘᴇᴄɪᴀʟ ʟɪɴᴋ ғᴏʀ sᴘᴇᴄɪғɪᴄ ᴄʜᴀɴɴᴇʟs.\n\n"
-        "➪ Iɴ ᴏʀᴅᴇʀ ᴛᴏ ɢᴇᴛ ᴛʜᴇ ғɪʟᴇs ʏᴏᴜ ʜᴀᴠᴇ ᴛᴏ ᴊᴏɪɴ ᴛʜᴇ ᴀʟʟ ᴍᴇɴᴛɪᴏɴᴇᴅ ᴄʜᴀɴɴᴇʟ ᴛʜᴀᴛ ɪ ᴘʀᴏᴠɪᴅᴇ ʏᴏᴜ ᴛᴏ ᴊᴏɪɴ. "
-        "Yᴏᴜ ᴄᴀɴ ɴᴏᴛ ᴀᴄᴄᴇss ᴏʀ ɢᴇᴛ ᴛʜᴇ ғɪʟᴇs ᴜɴʟᴇss ʏᴏᴜ ᴊᴏɪɴᴇᴅ ᴀʟʟ ᴄʜᴀɴɴᴇʟs.\n\n"
-        "➪ Sᴏ ᴊᴏɪɴ Mᴇɴᴛɪᴏɴᴇᴅ Cʜᴀɴɴᴇʟs ᴛᴏ ɢᴇᴛ Fɪʟᴇs ᴏʀ ɪɴɪᴛɪᴀᴛᴇ ᴍᴇssᴀɢᴇs...\n\n"
-        "‣ /help - Oᴘᴇɴ ᴛʜɪs ʜᴇʟᴘ ᴍᴇssᴀɢᴇ !"
+        "🌐 I ᴀᴍ ᴀ ᴘʀɪᴠᴀᴛᴇ ғɪʟᴇ sʜᴀʀɪɴɢ ʙᴏᴛ, ᴍᴇᴀɴᴛ ᴛᴏ ᴘʀᴏᴠɪᴅᴇ ғɪʟᴇs ᴀɴᴅ ɴᴇᴄᴇssᴀʀʏ sᴛᴜғғ ᴛʜʀᴏᴜɢʜ sᴘᴇᴄɪᴀʟ ʟɪɴᴋ ғᴏʀ sᴘᴇᴄɪғɪᴄ ᴄʜᴀɴɴᴇʟs.\n\n"
+        "🌐 In ᴏʀᴅᴇʀ ᴛᴏ ʟᴇᴛ ʏᴏᴜ ᴋɴᴏᴡ ᴛʜᴇ ᴀʀᴇ ᴀʟʟ ʙᴇɴᴇғɪᴄɪᴀʀʏ ᴄʜᴀɴɴᴇʟ ᴛʜᴀᴛ ʏᴏᴜ ᴡᴀɴᴛ ᴛᴏ ᴋɴᴏᴡ. "
+        "You ᴄᴀɴ ɴᴏᴛ ᴀᴄᴄᴇss ᴛʜᴇ ғɪʟᴇs ᴜɴʟᴇss ʏᴏᴜ ᴊᴏɪɴᴇᴅ ᴀʟʟ ᴄʜᴀɴɴᴇʟs.\n\n"
+        "🌐 So ᴊᴏɪɴᴇᴅ ɴᴇᴄᴇssᴀʀʏ ᴄʜᴀɴɴᴇʟs ᴛᴏ ɢᴇᴛ ғɪʟᴇs ᴏɴ ɪɴɪᴛɪᴀʟ ʀᴇǫᴜᴇsᴛs...\n\n"
+        "• /help - Open ᴛʜɪs ʀᴇǫᴜᴇsᴛ !"
     )
-    
-    blockquote_content = format_text_with_blockquote(help_msg, expandable=expandable)
     
     return (
-        f"<b>⁉️ Hᴇʟʟᴏ {user_name} ~</b>\n\n"
-        f"{blockquote_content}\n"
-        "<b>◈ Sᴛɪʟʟ ʜᴀᴠᴇ ᴅᴏᴜʙᴛs, ᴄᴏɴᴛᴀᴄᴛ ʙᴇʟᴏᴡ ᴘᴇʀsᴏɴs/ɢʀᴏᴜᴘ ᴀs ᴘᴇʀ ʏᴏᴜʀ ɴᴇᴇᴅ !</b>"
+        f"<b>ℹ️ Hello {user_name} ~</b>\n\n"
+        f"<blockquote expandable>{help_msg}</blockquote>\n"
+        "<b>⚠️ Strictly follows, contact us/admins if u face any issues/errors !</b>"
     )
 
+# FIX #1: Updated create_force_sub_text with proper blockquote
 def create_force_sub_text(user_name: str, joined_count: int, total_count: int, expandable: bool = True) -> str:
     """
     Create force subscribe text with blockquote expandable support - FIXED
@@ -1221,18 +1219,14 @@ def create_force_sub_text(user_name: str, joined_count: int, total_count: int, e
         f"Please join the channels provided below, then try again."
     )
     
-    # FIX: Direct blockquote without nested formatting
-    if expandable:
-        blockquote_content = f'<blockquote expandable>{fsub_msg}</blockquote>'
-    else:
-        blockquote_content = f'<blockquote>{fsub_msg}</blockquote>'
-    
+    # FIXED: Proper blockquote formatting
     return (
         f"<b>Hey, {user_name}</b>\n\n"
-        f"{blockquote_content}\n\n"
-        f'<blockquote><b>Facing problems? Use: /help</b></blockquote>'
+        f"<blockquote expandable>{fsub_msg}</blockquote>\n\n"
+        f"<blockquote><b>Facing problems? Use: /help</b></blockquote>"
     )
 
+# FIX #2: Updated create_files_settings_text with proper blockquote
 def create_files_settings_text(protect_content: bool, hide_caption: bool, channel_button: bool) -> str:
     """
     Create files settings text with blockquote support - FIXED
@@ -1245,14 +1239,15 @@ def create_files_settings_text(protect_content: bool, hide_caption: bool, channe
     
     return (
         "<b>📁 𝗙𝗜𝗟𝗘𝗦 𝗥𝗘𝗟𝗔𝗧𝗘𝗗 𝗦𝗘𝗧𝗧𝗜𝗡𝗚𝗦</b>\n\n"
-        f"<blockquote>"
+        "<blockquote>"
         f"<b>🔒 ᴘʀᴏᴛᴇᴄᴛ ᴄᴏɴᴛᴇɴᴛ:</b> {protect_status}\n"
         f"<b>🫥 ʜɪᴅᴇ ᴄᴀᴘᴛɪᴏɴ:</b> {hide_status}\n"
         f"<b>🔘 ᴄʜᴀɴɴᴇʟ ʙᴜᴛᴛᴏɴ:</b> {button_status}"
-        f"</blockquote>\n\n"
+        "</blockquote>\n\n"
         "<b>ᴄʟɪᴄᴋ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴs ᴛᴏ ᴄʜᴀɴɢᴇ sᴇᴛᴛɪɴɢs</b>"
     )
 
+# FIX #3: Updated create_auto_delete_text with proper blockquote
 def create_auto_delete_text(auto_delete: bool, auto_delete_time: int, clean_conv: bool, show_inst: bool) -> str:
     """
     Create auto delete settings text with blockquote support
@@ -1264,19 +1259,18 @@ def create_auto_delete_text(auto_delete: bool, auto_delete_time: int, clean_conv
     clean_status = "ᴇɴᴀʙʟᴇᴅ ✅" if clean_conv else "ᴅɪsᴀʙʟᴇᴅ ❌"
     inst_status = "ᴇɴᴀʙʟᴇᴅ ✅" if show_inst else "ᴅɪsᴀʙʟᴇᴅ ❌"
     
-    settings_content = (
+    return (
+        "<b>🤖 𝗔𝗨𝗧𝗢 𝗗𝗘𝗟𝗘𝗧𝗘 𝗦𝗘𝗧𝗧𝗜𝗡𝗚𝗦 ⚙️</b>\n\n"
+        "<blockquote>"
         f"<b>🗑️ ᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ ғɪʟᴇs:</b> {file_delete_status}\n"
         f"<b>⏱️ ᴅᴇʟᴇᴛᴇ ᴛɪᴍᴇʀ:</b> {time_text}\n"
         f"<b>💬 ᴄʟᴇᴀɴ ᴄᴏɴᴠᴇʀsᴀᴛɪᴏɴ:</b> {clean_status}\n"
         f"<b>📝 sʜᴏᴡ ɪɴsᴛʀᴜᴄᴛɪᴏɴ:</b> {inst_status}"
-    )
-    
-    return (
-        "<b>🤖 𝗔𝗨𝗧𝗢 𝗗𝗘𝗟𝗘𝗧𝗘 𝗦𝗘𝗧𝗧𝗜𝗡𝗚𝗦 ⚙️</b>\n\n"
-        f"<blockquote>{settings_content}</blockquote>\n"
+        "</blockquote>\n\n"
         "<b>ᴄʟɪᴄᴋ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴs ᴛᴏ ᴄʜᴀɴɢᴇ sᴇᴛᴛɪɴɢs</b>"
     )
 
+# FIX #4: Updated create_instruction_message with proper blockquote
 def create_instruction_message() -> str:
     """
     Create instruction message shown after files are deleted
@@ -1284,15 +1278,13 @@ def create_instruction_message() -> str:
     VERIFIED: This is Feature 3 - Show instruction after file deletion
     This message is NOT auto-deleted (stays for user to resend files)
     """
-    instruction_content = (
+    return (
+        "<b>⚠️ FILES DELETED</b>\n\n"
+        "<blockquote>"
         "YOUR FILES HAVE BEEN DELETED!\n\n"
         "IF YOU WANT TO GET THE FILES AGAIN, "
         "CLICK THE BUTTON BELOW OR USE THE ORIGINAL LINK AGAIN."
-    )
-    
-    return (
-        "<b>⚠️ FILES DELETED</b>\n\n"
-        f"<blockquote>{instruction_content}</blockquote>"
+        "</blockquote>"
     )
 
 def get_file_delete_time_options() -> list:
@@ -1325,20 +1317,20 @@ def verify_three_autodelete_features():
     logger.info("=" * 70)
     logger.info("VERIFYING THREE AUTO-DELETE FEATURES:")
     logger.info("-" * 70)
-    logger.info(f"✓ Feature 1 - Clean Conversation: {Config.CLEAN_CONVERSATION}")
+    logger.info(f"✅ Feature 1 - Clean Conversation: {Config.CLEAN_CONVERSATION}")
     logger.info(f"  → Deletes previous bot message when sending new one")
     logger.info("-" * 70)
-    logger.info(f"✓ Feature 2 - Auto Delete Files: {Config.AUTO_DELETE}")
+    logger.info(f"✅ Feature 2 - Auto Delete Files: {Config.AUTO_DELETE}")
     logger.info(f"  → Delete timer: {Config.AUTO_DELETE_TIME} seconds")
     logger.info(f"  → Deletes file messages after specified time")
     logger.info("-" * 70)
-    logger.info(f"✓ Feature 3 - Show Instruction: {Config.SHOW_INSTRUCTION_AFTER_DELETE}")
+    logger.info(f"✅ Feature 3 - Show Instruction: {Config.SHOW_INSTRUCTION_AFTER_DELETE}")
     logger.info(f"  → Shows resend button after file deletion")
     logger.info(f"  → This message is NOT auto-deleted")
     logger.info("=" * 70)
     
     return {
-        "clean_conversation": Config.CLEAN_CONVERSATION,
+        "clean_conversation": Config.CLEAN_CONVERSation,
         "auto_delete": Config.AUTO_DELETE,
         "auto_delete_time": Config.AUTO_DELETE_TIME,
         "show_instruction": Config.SHOW_INSTRUCTION_AFTER_DELETE
@@ -1404,7 +1396,7 @@ class Bot(Client):
         # Admin cache for faster access
         self.admin_cache = set()
         
-        logger.info("✓ Bot instance created with THREE auto-delete features")
+        logger.info("✅ Bot instance created with THREE auto-delete features")
     
     # ===================================
     # ADMIN CHECK METHOD
@@ -1448,7 +1440,7 @@ class Bot(Client):
             for admin_id in db_admins:
                 self.admin_cache.add(admin_id)
                 
-            logger.info(f"✓ Admin cache refreshed: {len(self.admin_cache)} admins")
+            logger.info(f"✅ Admin cache refreshed: {len(self.admin_cache)} admins")
         except Exception as e:
             logger.error(f"Error refreshing admin cache: {e}")
     
@@ -1470,7 +1462,7 @@ class Bot(Client):
                 
                 if message_id:
                     await self.delete_messages(user_id, message_id)
-                    logger.debug(f"✓ Deleted previous bot message {message_id} for user {user_id}")
+                    logger.debug(f"✅ Deleted previous bot message {message_id} for user {user_id}")
                 
                 # Remove from tracking
                 del self.user_last_bot_message[user_id]
@@ -1493,7 +1485,7 @@ class Bot(Client):
             "message_id": message_id,
             "timestamp": datetime.datetime.now(datetime.timezone.utc)
         }
-        logger.debug(f"✓ Stored bot message {message_id} for user {user_id}")
+        logger.debug(f"✅ Stored bot message {message_id} for user {user_id}")
     
     # ===================================
     # FEATURE 2: AUTO DELETE FILES METHODS
@@ -1527,7 +1519,7 @@ class Bot(Client):
                 "task": task
             })
             
-            logger.info(f"✓ Scheduled file message {message_id} for deletion in {delete_after}s for user {user_id}")
+            logger.info(f"✅ Scheduled file message {message_id} for deletion in {delete_after}s for user {user_id}")
             
         except Exception as e:
             logger.error(f"Error scheduling file deletion: {e}")
@@ -1544,7 +1536,7 @@ class Bot(Client):
             
             # Delete the file message
             await self.delete_messages(user_id, message_id)
-            logger.info(f"✓ Auto-deleted file message {message_id} for user {user_id}")
+            logger.info(f"✅ Auto-deleted file message {message_id} for user {user_id}")
             
             # Remove from tracking
             if user_id in self.user_file_messages:
@@ -1583,7 +1575,7 @@ class Bot(Client):
                         task.cancel()
                 
                 del self.user_file_messages[user_id]
-                logger.info(f"✓ Cancelled all file deletions for user {user_id}")
+                logger.info(f"✅ Cancelled all file deletions for user {user_id}")
                 
         except Exception as e:
             logger.error(f"Error cancelling file deletions for user {user_id}: {e}")
@@ -1618,7 +1610,7 @@ class Bot(Client):
             
             # Create resend button
             buttons = [
-                [InlineKeyboardButton("🔄 GET FILES AGAIN", callback_data="resend_files")],
+                [InlineKeyboardButton("🔃 GET FILES AGAIN", callback_data="resend_files")],
                 [InlineKeyboardButton("❌ CLOSE", callback_data="close_instruction")]
             ]
             keyboard = InlineKeyboardMarkup(buttons)
@@ -1639,7 +1631,7 @@ class Bot(Client):
                     "timestamp": datetime.datetime.now(datetime.timezone.utc)
                 }
                 
-                logger.info(f"✓ Showed instruction message for user {user_id}")
+                logger.info(f"✅ Showed instruction message for user {user_id}")
                 
             except Exception as e:
                 logger.error(f"Error sending instruction message to user {user_id}: {e}")
@@ -1656,7 +1648,7 @@ class Bot(Client):
         try:
             if user_id in self.user_instruction_message:
                 del self.user_instruction_message[user_id]
-                logger.debug(f"✓ Cleared instruction tracking for user {user_id}")
+                logger.debug(f"✅ Cleared instruction tracking for user {user_id}")
         except Exception as e:
             logger.error(f"Error clearing instruction for user {user_id}: {e}")
 
@@ -1687,7 +1679,7 @@ class Bot(Client):
             if len(self.user_file_history[user_id]) > 5:
                 self.user_file_history[user_id] = self.user_file_history[user_id][-5:]
             
-            logger.debug(f"✓ Tracked {len(file_ids)} files for user {user_id}")
+            logger.debug(f"✅ Tracked {len(file_ids)} files for user {user_id}")
             
         except Exception as e:
             logger.error(f"Error tracking files for user {user_id}: {e}")
@@ -1711,11 +1703,11 @@ class Bot(Client):
                 await self.user_client.start()
                 
                 user_me = await self.user_client.get_me()
-                logger.info(f"✓ User account started: @{user_me.username} (ID: {user_me.id})")
+                logger.info(f"✅ User account started: @{user_me.username} (ID: {user_me.id})")
                 return True
                 
             except Exception as e:
-                logger.error(f"✗ Failed to start user account: {e}")
+                logger.error(f"❌ Failed to start user account: {e}")
                 self.user_client = None
                 return False
         
@@ -1733,11 +1725,11 @@ class Bot(Client):
                 await self.user_client.start()
                 
                 user_me = await self.user_client.get_me()
-                logger.info(f"✓ User account started: @{user_me.username} (ID: {user_me.id})")
+                logger.info(f"✅ User account started: @{user_me.username} (ID: {user_me.id})")
                 return True
                 
             except Exception as e:
-                logger.error(f"✗ Failed to start user account: {e}")
+                logger.error(f"❌ Failed to start user account: {e}")
                 self.user_client = None
                 return False
         
@@ -1750,7 +1742,7 @@ class Bot(Client):
         if self.user_client:
             try:
                 await self.user_client.stop()
-                logger.info("✓ User account stopped")
+                logger.info("✅ User account stopped")
             except Exception as e:
                 logger.error(f"Error stopping user account: {e}")
     
@@ -1789,7 +1781,7 @@ class Bot(Client):
                 emoji=reaction
             )
             
-            logger.debug(f"✓ Reaction sent: {reaction}")
+            logger.debug(f"✅ Reaction sent: {reaction}")
             return True
             
         except Exception as e:
@@ -1865,9 +1857,9 @@ class Bot(Client):
         # Print bot info
         me = await self.get_me()
         Config.BOT_USERNAME = me.username
-        logger.info(f"✓ Bot started as @{me.username}")
-        logger.info(f"✓ Bot ID: {me.id}")
-        logger.info(f"✓ Force Sub Channels: {len(self.force_sub_channels)}")
+        logger.info(f"✅ Bot started as @{me.username}")
+        logger.info(f"✅ Bot ID: {me.id}")
+        logger.info(f"✅ Force Sub Channels: {len(self.force_sub_channels)}")
         logger.info("=" * 70)
         logger.info("THREE AUTO-DELETE FEATURES ACTIVE:")
         logger.info(f"  1. Clean Conversation: {self.settings.get('clean_conversation', True)}")
@@ -1877,11 +1869,11 @@ class Bot(Client):
         
         # Send startup message to owner
         await self.send_log_message(
-            f"✅ <b>Bot Started Successfully!</b>\n\n"
+            f"🚀 <b>Bot Started Successfully!</b>\n\n"
             f"<b>THREE AUTO-DELETE FEATURES:</b>\n"
-            f"1️⃣ Clean Conversation: {'✅' if self.settings.get('clean_conversation') else '❌'}\n"
-            f"2️⃣ Auto Delete Files: {'✅' if self.settings.get('auto_delete') else '❌'}\n"
-            f"3️⃣ Show Instruction: {'✅' if self.settings.get('show_instruction') else '❌'}\n\n"
+            f"1️⃣─ Clean Conversation: {'✅' if self.settings.get('clean_conversation') else '❌'}\n"
+            f"2️⃣─ Auto Delete Files: {'✅' if self.settings.get('auto_delete') else '❌'}\n"
+            f"3️⃣─ Show Instruction: {'✅' if self.settings.get('show_instruction') else '❌'}\n\n"
             f"📢 Force Subscribe: {len(self.force_sub_channels)} channels"
         )
         
@@ -1892,7 +1884,7 @@ class Bot(Client):
         await self.stop_user_account()
         await self.db.close()
         await super().stop()
-        logger.info("✓ Bot stopped")
+        logger.info("✅ Bot stopped")
     
     async def set_bot_commands(self):
         """
@@ -1905,7 +1897,7 @@ class Bot(Client):
                 commands=BOT_COMMANDS["all_users"],
                 scope=BotCommandScopeDefault()
             )
-            logger.info("✓ Basic commands set for all users in '/' menu")
+            logger.info("✅ Basic commands set for all users in '/' menu")
             
             # Set admin commands for each admin (individual scope)
             all_admins = Config.ADMINS.copy()
@@ -1927,7 +1919,7 @@ class Bot(Client):
                 except Exception as e:
                     logger.debug(f"Could not set admin commands for {admin_id}: {e}")
             
-            logger.info(f"✓ Admin commands set for {len(all_admins)} admins in '/' menu")
+            logger.info(f"✅ Admin commands set for {len(all_admins)} admins in '/' menu")
             
         except Exception as e:
             logger.error(f"Error setting bot commands: {e}")
@@ -2209,7 +2201,7 @@ class Bot(Client):
         async def text_handler(client, message):
             await self.text_message_handler(message)
         
-        logger.info("✓ All handlers registered successfully")
+        logger.info("✅ All handlers registered successfully")
         logger.info("=" * 70)
 
     # ===================================
@@ -2311,11 +2303,11 @@ class Bot(Client):
         # Create buttons
         buttons = [
             [
-                InlineKeyboardButton("⁉️ ʜᴇʟᴘ", callback_data="help_menu"),
-                InlineKeyboardButton("ᴀʙᴏᴜᴛ 📖", callback_data="about_menu")
+                InlineKeyboardButton("ℹ️ Help", callback_data="help_menu"),
+                InlineKeyboardButton("About 📄", callback_data="about_menu")
             ],
             [
-                InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")
+                InlineKeyboardButton("Close ✖️", callback_data="close")
             ]
         ]
     
@@ -2379,10 +2371,10 @@ class Bot(Client):
             username = channel.get("channel_username")
         
             if username:
-                button_text = "ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ"
+                button_text = "Join Channel"
                 button_url = f"https://t.me/{username}"
             else:
-                button_text = "ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ"
+                button_text = "Private Channel"
                 try:
                     invite_link = await self.create_invite_link(channel_id)
                     if invite_link:
@@ -2396,8 +2388,8 @@ class Bot(Client):
             buttons.append([InlineKeyboardButton(button_text, url=button_url)])
     
         # Add try again and help buttons
-        buttons.append([InlineKeyboardButton("🔄 ᴛʀʏ ᴀɢᴀɪɴ", callback_data="check_fsub")])
-        buttons.append([InlineKeyboardButton("⁉️ ʜᴇʟᴘ", callback_data="help_menu")])
+        buttons.append([InlineKeyboardButton("🔃 Try Again", callback_data="check_fsub")])
+        buttons.append([InlineKeyboardButton("ℹ️ Help", callback_data="help_menu")])
     
         keyboard = InlineKeyboardMarkup(buttons)
     
@@ -2734,15 +2726,15 @@ class Bot(Client):
         # Create buttons
         buttons = [
             [
-                InlineKeyboardButton("ᴀɴɪᴍᴇ ᴄʜᴀɴɴᴇʟ", url=f"https://t.me/{Config.UPDATE_CHANNEL}"),
-                InlineKeyboardButton("ᴄᴏɴᴛᴀᴄᴛ ᴀᴅᴍɪɴ", url=f"https://t.me/{Config.SUPPORT_CHAT}")
+                InlineKeyboardButton("Update Channel", url=f"https://t.me/{Config.UPDATE_CHANNEL}"),
+                InlineKeyboardButton("Support Admin", url=f"https://t.me/{Config.SUPPORT_CHAT}")
             ],
             [
-                InlineKeyboardButton("ᴀʙᴏᴜᴛ ᴍᴇ 📖", callback_data="about_menu"),
-                InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="start_menu")
+                InlineKeyboardButton("About 📄", callback_data="about_menu"),
+                InlineKeyboardButton("🏠 Home", callback_data="start_menu")
             ],
             [
-                InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")
+                InlineKeyboardButton("Close ✖️", callback_data="close")
             ]
         ]
 
@@ -2806,8 +2798,8 @@ class Bot(Client):
             )
 
         buttons = [
-            [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="start_menu")],
-            [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
+            [InlineKeyboardButton("🏠 Home", callback_data="start_menu")],
+            [InlineKeyboardButton("Close ✖️", callback_data="close")]
         ]
 
         keyboard = InlineKeyboardMarkup(buttons)
@@ -3003,7 +2995,7 @@ class Bot(Client):
             # ===================================
 
             elif data == "check_fsub":
-                await query.answer("🔄 Checking subscription...")
+                await query.answer("🔃 Checking subscription...")
                 
                 # Check if user is subscribed
                 user_is_subscribed = await is_subscribed(self, user_id, self.force_sub_channels)
@@ -3025,7 +3017,7 @@ class Bot(Client):
             # ===================================
 
             elif data == "resend_files":
-                await query.answer("🔄 Resending files...")
+                await query.answer("🔃 Resending files...")
                 await self.resend_files_callback(query)
 
             # ===================================
@@ -3073,7 +3065,7 @@ class Bot(Client):
             # ===================================
 
             elif data.startswith("refresh_"):
-                await query.answer("🔄 Refreshing...")
+                await query.answer("🔃 Refreshing...")
                 await self.handle_refresh_callback(query)
 
             # ===================================
@@ -3227,7 +3219,7 @@ class Bot(Client):
             message_text += "</blockquote>"
             
             buttons.append([
-                InlineKeyboardButton("🔙 Back", callback_data="fsub_chnl_menu"),
+                InlineKeyboardButton("🏠 Back", callback_data="fsub_chnl_menu"),
                 InlineKeyboardButton("❌ Close", callback_data="close")
             ])
             
@@ -3539,7 +3531,7 @@ class Bot(Client):
         await response.edit_text(
             f"🏓 <b>Pong!</b>\n\n"
             f"<blockquote>"
-            f"<b>📡 Ping:</b> {ping_time}ms\n"
+            f"<b>📊 Ping:</b> {ping_time}ms\n"
             f"<b>⏰ Time:</b> {datetime.datetime.now().strftime('%H:%M:%S')}\n"
             f"<b>📅 Date:</b> {datetime.datetime.now().strftime('%Y-%m-%d')}"
             f"</blockquote>",
@@ -3574,8 +3566,8 @@ class Bot(Client):
 
         # Basic commands for all users
         cmd_text = (
-            "📋 <b>BOT COMMANDS</b>\n\n"
-            "<b>✨ BASIC COMMANDS:</b>\n"
+            "🔘 <b>BOT COMMANDS</b>\n\n"
+            "<b>⚙️ BASIC COMMANDS:</b>\n"
             "<blockquote>"
             "• /start - Start bot\n"
             "• /help - Show help\n"
@@ -3592,7 +3584,7 @@ class Bot(Client):
                 "• /stats - View statistics\n"
                 "• /users - User stats\n"
                 "• /refresh< - Refresh stats\n\n"
-                "<b>🔗 File Management:</b>\n"
+                "<b>📁 File Management:</b>\n"
                 "• /genlink - Generate link\n"
                 "• /getlink - Get link (reply to file)\n"
                 "• /batch - Store multiple files\n"
@@ -3626,7 +3618,7 @@ class Bot(Client):
                 "• /shortener - URL shortener\n"
                 "• /font - Font styles"
                 "</blockquote>\n\n"
-                "<i>💡 Click buttons below to navigate</i>"
+                "<i>🔘 Click buttons below to navigate</i>"
             )
 
         # ===================================
@@ -3637,26 +3629,26 @@ class Bot(Client):
             # ADMIN PANEL - FULL BUTTONS
             buttons = [
                 [
-                    InlineKeyboardButton("⚙️ sᴇᴛᴛɪɴɢs", callback_data="settings_menu"),
-                    InlineKeyboardButton("📊 sᴛᴀᴛs", callback_data="stats_menu")
+                    InlineKeyboardButton("⚙️ settings", callback_data="settings_menu"),
+                    InlineKeyboardButton("📊 stats", callback_data="stats_menu")
                 ],
                 [
-                    InlineKeyboardButton("👥 ᴜsᴇʀs", callback_data="users_menu"),
-                    InlineKeyboardButton("📁 ғɪʟᴇs", callback_data="files_settings")
+                    InlineKeyboardButton("👥 users", callback_data="users_menu"),
+                    InlineKeyboardButton("📁 files", callback_data="files_settings")
                 ],
                 [
-                    InlineKeyboardButton("🗑️ ᴀᴜᴛᴏ ᴅᴇʟ", callback_data="auto_delete_settings"),
-                    InlineKeyboardButton("📢 ғᴏʀᴄᴇ sᴜʙ", callback_data="force_sub_settings")
+                    InlineKeyboardButton("🗑️ auto delete", callback_data="auto_delete_settings"),
+                    InlineKeyboardButton("📢 force sub", callback_data="force_sub_settings")
                 ],
                 [
-                    InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="start_menu"),
-                    InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close")
+                    InlineKeyboardButton("🏠 Home", callback_data="start_menu"),
+                    InlineKeyboardButton("❌ Close", callback_data="close")
                 ]
             ]
         else:
             # USER PANEL - ONLY CLOSE BUTTON
             buttons = [
-                [InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close")]
+                [InlineKeyboardButton("❌ Close", callback_data="close")]
             ]
 
         keyboard = InlineKeyboardMarkup(buttons)
@@ -3698,7 +3690,7 @@ class Bot(Client):
         if settings.get("clean_conversation", True):
             await self.delete_previous_bot_message(user_id)
 
-        response = await message.reply("🔄 <b>Refreshing...</b>", parse_mode=enums.ParseMode.HTML)
+        response = await message.reply("🔃 <b>Refreshing...</b>", parse_mode=enums.ParseMode.HTML)
 
         # Get updated counts
         total_users = await self.db.total_users_count()
@@ -3718,105 +3710,9 @@ class Bot(Client):
 
         # FEATURE 1: Store this message for future deletion
         await self.store_bot_message(user_id, response.id)
-
-    async def logs_command(self, message: Message):
-        """
-        Handle /logs command - Send bot logs
-        
-        IMPLEMENTS: FEATURE 1 (Clean Conversation)
-        """
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        try:
-            # Check if log file exists
-            if not os.path.exists('bot.log'):
-                response = await message.reply("❌ <b>Log file not found!</b>", parse_mode=enums.ParseMode.HTML)
-                await self.store_bot_message(user_id, response.id)
-                return
-
-            # Send the log file
-            await message.reply_document(
-                document='bot.log',
-                caption="📊 <b>Bot Logs</b>\n\n<i>Latest logs from bot.log</i>",
-                parse_mode=enums.ParseMode.HTML
-            )
-
-            # Note: We don't store document messages
-
-        except Exception as e:
-            logger.error(f"Error in logs command: {e}")
-            response =await message.reply(f"❌ <b>Error fetching logs:</b>\n<code>{str(e)}</code>",
-            parse_mode=enums.ParseMode.HTML
-            )
-            await self.store_bot_message(user_id, response.id)
-
-    async def shortener_command(self, message: Message):
-        """
-        Handle /shortener command - URL shortener settings
-        
-        IMPLEMENTS: FEATURE 1 (Clean Conversation)
-        """
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        # Get shortener settings
-        shortener_url = Config.SHORTENER_URL
-        shortener_api = Config.SHORTENER_API
-
-        status = "✅ <b>ENABLED</b>" if shortener_url and shortener_api else "❌ <b>DISABLED</b>"
-
-        shortener_text = (
-            "<b>🔗 URL SHORTENER SETTINGS</b>\n\n"
-            f"<blockquote>"
-            f"<b>Status:</b> {status}\n"
-            f"<b>Shortener URL:</b> {shortener_url if shortener_url else 'Not set'}\n"
-            f"<b>API Key:</b> {'Set' if shortener_api else 'Not set'}"
-            f"</blockquote>\n\n"
-            f"<i>Configure shortener in environment variables:\n"
-            f"• SHORTENER_URL\n"
-            f"• SHORTENER_API</i>"
-        )
-
-        buttons = [
-            [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu")],
-            [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
-        ]
-
-        keyboard = InlineKeyboardMarkup(buttons)
-
-        response = await message.reply(
-            shortener_text,
-            reply_markup=keyboard,
-            parse_mode=enums.ParseMode.HTML
-        )
-
-        # FEATURE 1: Store this message for future deletion
-        await self.store_bot_message(user_id, response.id)
-
-    async def font_command(self, message: Message):
+async def logs_command(self, message: Message):
     """
-    Handle /font command - Font style settings
+    Handle /logs command - Send bot logs
     
     IMPLEMENTS: FEATURE 1 (Clean Conversation)
     """
@@ -3833,8 +3729,2039 @@ class Bot(Client):
     if settings.get("clean_conversation", True):
         await self.delete_previous_bot_message(user_id)
 
+    try:
+        # Check if log file exists
+        if not os.path.exists('bot.log'):
+            response = await message.reply("❌ <b>Log file not found!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
+            return
 
-# These should be defined at module level, NOT inside the font_command method
+        # Send the log file
+        await message.reply_document(
+            document='bot.log',
+            caption="📊 <b>Bot Logs</b>\n\n<i>Latest logs from bot.log</i>",
+            parse_mode=enums.ParseMode.HTML
+        )
+
+        # Note: We don't store document messages
+
+    except Exception as e:
+        logger.error(f"Error in logs command: {e}")
+        response = await message.reply(
+            f"❌ <b>Error fetching logs:</b>\n<code>{str(e)}</code>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+
+async def shortener_command(self, message: Message):
+    """
+    Handle /shortener command - URL shortener settings
+    
+    IMPLEMENTS: FEATURE 1 (Clean Conversation)
+    """
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    # Get shortener settings
+    shortener_url = Config.SHORTENER_URL
+    shortener_api = Config.SHORTENER_API
+
+    status = "✅ <b>ENABLED</b>" if shortener_url and shortener_api else "❌ <b>DISABLED</b>"
+
+    shortener_text = (
+        "<b>🔗 URL SHORTENER SETTINGS</b>\n\n"
+        "<blockquote>"
+        f"<b>Status:</b> {status}\n"
+        f"<b>Shortener URL:</b> {shortener_url if shortener_url else 'Not set'}\n"
+        f"<b>API Key:</b> {'Set' if shortener_api else 'Not set'}"
+        "</blockquote>\n\n"
+        "<i>Configure shortener in environment variables:\n"
+        "• SHORTENER_URL\n"
+        "• SHORTENER_API</i>"
+    )
+
+    buttons = [
+        [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu")],
+        [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
+    ]
+
+    keyboard = InlineKeyboardMarkup(buttons)
+
+    response = await message.reply(
+        shortener_text,
+        reply_markup=keyboard,
+        parse_mode=enums.ParseMode.HTML
+    )
+
+    # FEATURE 1: Store this message for future deletion
+    await self.store_bot_message(user_id, response.id)
+
+async def font_command(self, message: Message):
+    """
+    Handle /font command - Show font menu
+    
+    IMPLEMENTS: FEATURE 1 (Clean Conversation)
+    """
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+    
+    response = await message.reply(
+        "<b>🎨 FONT STYLES</b>\n\n"
+        "<blockquote>"
+        "Use <code>/font [text]</code> to style your text.\n\n"
+        "<b>Example:</b> <code>/font Hello World</code>"
+        "</blockquote>",
+        parse_mode=enums.ParseMode.HTML
+    )
+    
+    await self.store_bot_message(user_id, response.id)
+
+# ===================================
+# ADMIN MANAGEMENT COMMANDS
+# ===================================
+
+async def admin_list_command(self, message: Message):
+    """
+    Handle /admin_list command
+    
+    IMPLEMENTS: FEATURE 1 (Clean Conversation)
+    """
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+    
+    try:
+        # Get admins
+        db_admins = await self.db.get_admins()
+        all_admins = list(set(Config.ADMINS + db_admins))
+        
+        if not all_admins:
+            response = await message.reply("❌ <b>No admins found!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
+            return
+        
+        # Format message - FIXED: Proper blockquote expandable formatting
+        admin_text = (
+            "<b>🤖 𝗨𝗦𝗘𝗥 𝗦𝗘𝗧𝗧𝗜𝗡𝗚 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦 :</b>\n\n"
+            "<blockquote expandable>"
+            "<b>/admin_list</b> - ᴠɪᴇᴡ ᴛʜᴇ ᴀᴠᴀɪʟᴀʙʟᴇ ᴀᴅᴍɪɴ ʟɪsᴛ (ᴏᴡɴᴇʀ)\n\n"
+            "<b>/add_admins</b> - ᴀᴅᴅ ᴏɴᴇ ᴏʀ ᴍᴜʟᴛɪᴘʟᴇ ᴜsᴇʀ ɪᴅs ᴀs ᴀᴅᴍɪɴ (ᴏᴡɴᴇʀ)\n\n"
+            "<b>/del_admins</b> - ᴅᴇʟᴇᴛᴇ ᴏɴᴇ ᴏʀ ᴍᴜʟᴛɪᴘʟᴇ ᴜsᴇʀ ɪᴅs ғʀᴏᴍ ᴀᴅᴍɪɴs (ᴏᴡɴᴇʀ)\n\n"
+            "<b>/banuser_list</b> - ᴠɪᴇᴡ ᴛʜᴇ ᴀᴠᴀɪʟᴀʙʟᴇ ʙᴀɴɴᴇᴅ ᴜsᴇʀ ʟɪsᴛ (ᴀᴅᴍɪɴs)\n\n"
+            "<b>/add_banuser</b> - ᴀᴅᴅ ᴏɴᴇ ᴏʀ ᴍᴜʟᴛɪᴘʟᴇ ᴜsᴇʀ ɪᴅs ɪɴ ʙᴀɴɴᴇᴅ ʟɪsᴛ (ᴀᴅᴍɪɴs)\n\n"
+            "<b>/del_banuser</b> - ᴅᴇʟᴇᴛᴇ ᴏɴᴇ ᴏʀ ᴍᴜʟᴛɪᴘʟᴇ ᴜsᴇʀ ɪᴅs ғʀᴏᴍ ʙᴀɴɴᴇᴅ ʟɪsᴛ (ᴀᴅᴍɪɴs)"
+            "</blockquote>\n\n"
+            f"<b>👑 Total Admins:</b> {len(all_admins)}"
+        )
+        
+        buttons = [
+            [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu")],
+            [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
+        ]
+        
+        keyboard = InlineKeyboardMarkup(buttons)
+        
+        response = await message.reply(
+            admin_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+        
+        await self.store_bot_message(user_id, response.id)
+        
+    except Exception as e:
+        logger.error(f"Error in admin_list command: {e}")
+        response = await message.reply("❌ <b>Error fetching admin list!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+async def add_admins_command(self, message: Message):
+    """
+    Handle /add_admins command
+    
+    IMPLEMENTS: FEATURE 1 (Clean Conversation)
+    """
+    user_id = message.from_user.id
+    
+    # Check if user is owner
+    if user_id != Config.OWNER_ID:
+        response = await message.reply("❌ <b>Owner only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+    
+    if len(message.command) < 2:
+        response = await message.reply(
+            "<b>➕ 𝗔𝗗𝗗 𝗔𝗗𝗠𝗜𝗡𝗦</b>\n\n"
+            "<blockquote>"
+            "<b>Usage:</b> <code>/add_admins user_id1,user_id2</code>\n\n"
+            "<b>Example:</b> <code>/add_admins 123456789,987654321</code>"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    try:
+        args = message.command[1].split(",")
+        added_admins = []
+        
+        for arg in args:
+            arg = arg.strip()
+            
+            try:
+                admin_id = int(arg)
+                
+                # Check if user exists
+                try:
+                    user = await self.get_users(admin_id)
+                    
+                    # Add to database
+                    await self.db.add_admin(admin_id)
+                    
+                    # Add to Config.ADMINS if not already
+                    if admin_id not in Config.ADMINS:
+                        Config.ADMINS.append(admin_id)
+                    
+                    # Refresh admin cache
+                    self.admin_cache.add(admin_id)
+                    
+                    added_admins.append(f"{user.first_name} ({admin_id})")
+                    
+                except Exception as e:
+                    await message.reply(f"❌ <b>Error adding {arg}:</b> {str(e)}", parse_mode=enums.ParseMode.HTML)
+                    continue
+                
+            except ValueError:
+                await message.reply(f"❌ <b>Invalid user ID:</b> {arg}", parse_mode=enums.ParseMode.HTML)
+                continue
+        
+        if added_admins:
+            response = await message.reply(
+                f"✅ <b>ᴀᴅᴍɪɴs ᴀᴅᴅᴇᴅ!</b>\n\n"
+                "<blockquote>"
+                f"<b>ᴀᴅᴅᴇᴅ {len(added_admins)} ᴀᴅᴍɪɴ(s):</b>\n"
+                + "\n".join(f"• {admin}" for admin in added_admins) +
+                "</blockquote>",
+                parse_mode=enums.ParseMode.HTML
+            )
+        else:
+            response = await message.reply("❌ <b>No admins were added!</b>", parse_mode=enums.ParseMode.HTML)
+        
+        await self.store_bot_message(user_id, response.id)
+    
+    except Exception as e:
+        logger.error(f"Error adding admins: {e}")
+        response = await message.reply("❌ <b>Error adding admins!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+async def del_admins_command(self, message: Message):
+    """
+    Handle /del_admins command
+    
+    IMPLEMENTS: FEATURE 1 (Clean Conversation)
+    """
+    user_id = message.from_user.id
+    
+    # Check if user is owner
+    if user_id != Config.OWNER_ID:
+        response = await message.reply("❌ <b>Owner only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+    
+    if len(message.command) < 2:
+        response = await message.reply(
+            "<b>🗑️ ᴅᴇʟᴇᴛᴇ ᴀᴅᴍɪɴs</b>\n\n"
+            "<blockquote>"
+            "<b>Usage:</b> <code>/del_admins user_id1,user_id2</code>\n\n"
+            "<b>Example:</b> <code>/del_admins 123456789,987654321</code>\n\n"
+            "<b>Note:</b> Cannot remove owner!"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    try:
+        args = message.command[1].split(",")
+        removed_admins = []
+        
+        for arg in args:
+            arg = arg.strip()
+            
+            try:
+                admin_id = int(arg)
+                
+                # Check if trying to remove owner
+                if admin_id == Config.OWNER_ID:
+                    await message.reply(f"❌ <b>Cannot remove owner ({admin_id})!</b>", parse_mode=enums.ParseMode.HTML)
+                    continue
+                
+                # Remove from database
+                await self.db.remove_admin(admin_id)
+                
+                # Remove from Config.ADMINS if present
+                if admin_id in Config.ADMINS:
+                    Config.ADMINS.remove(admin_id)
+                
+                # Remove from cache
+                if admin_id in self.admin_cache:
+                    self.admin_cache.remove(admin_id)
+                
+                removed_admins.append(str(admin_id))
+                
+            except ValueError:
+                await message.reply(f"❌ <b>Invalid user ID:</b> {arg}", parse_mode=enums.ParseMode.HTML)
+                continue
+        
+        if removed_admins:
+            response = await message.reply(
+                f"✅ <b>Admins Removed!</b>\n\n"
+                "<blockquote>"
+                f"<b>Removed {len(removed_admins)} admin(s):</b>\n"
+                + "\n".join(f"• {admin}" for admin in removed_admins) +
+                "</blockquote>",
+                parse_mode=enums.ParseMode.HTML
+            )
+        else:
+            response = await message.reply("❌ <b>No admins were removed!</b>", parse_mode=enums.ParseMode.HTML)
+        
+        await self.store_bot_message(user_id, response.id)
+    
+    except Exception as e:
+        logger.error(f"Error removing admins: {e}")
+        response = await message.reply("❌ <b>Error removing admins!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+# ===================================
+# USER STATISTICS COMMANDS
+# ===================================
+
+async def users_command(self, message: Message):
+    """
+    Handle /users command
+    
+    IMPLEMENTS: FEATURE 1 (Clean Conversation)
+    """
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+    
+    try:
+        # Get counts
+        total_users = await self.db.total_users_count()
+        banned_users = await self.db.get_banned_count()
+        active_users = total_users - banned_users
+        
+        # Get stats picture
+        welcome_pics = settings.get("welcome_pics", Config.WELCOME_PICS)
+        stats_pic = get_random_pic(welcome_pics)
+        
+        # Format message
+        stats_text = (
+            "<b>👥 USER STATISTICS</b>\n\n"
+            "<blockquote>"
+            f"<b>📊 Total Users:</b> {total_users:,}\n"
+            f"<b>✅ Active Users:</b> {active_users:,}\n"
+            f"<b>🚫 Banned Users:</b> {banned_users:,}\n\n"
+            f"<i>Last updated: {datetime.datetime.now().strftime('%H:%M:%S')}</i>"
+            "</blockquote>"
+        )
+        
+        buttons = [
+            [
+                InlineKeyboardButton("🔄 Refresh", callback_data="refresh_users"),
+                InlineKeyboardButton("📊 Stats", callback_data="stats_menu")
+            ],
+            [
+                InlineKeyboardButton("⬅️ Back", callback_data="settings_menu"),
+                InlineKeyboardButton("❌ Close", callback_data="close")
+            ]
+        ]
+        
+        keyboard = InlineKeyboardMarkup(buttons)
+        
+        try:
+            response = await message.reply_photo(
+                photo=stats_pic,
+                caption=stats_text,
+                reply_markup=keyboard,
+                parse_mode=enums.ParseMode.HTML
+            )
+        except Exception as e:
+            logger.error(f"Error sending stats photo: {e}")
+            response = await message.reply(
+                stats_text,
+                reply_markup=keyboard,
+                parse_mode=enums.ParseMode.HTML
+            )
+        
+        await self.store_bot_message(user_id, response.id)
+        
+    except Exception as e:
+        logger.error(f"Error in users command: {e}")
+        response = await message.reply("❌ <b>Error fetching user statistics!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+async def stats_command(self, message: Message):
+    """
+    Handle /stats command
+    
+    IMPLEMENTS: FEATURE 1 (Clean Conversation)
+    """
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+    
+    try:
+        # Get counts
+        total_users = await self.db.total_users_count()
+        banned_users = await self.db.get_banned_count()
+        active_users = total_users - banned_users
+        
+        # Get all admins
+        db_admins = await self.db.get_admins()
+        all_admins = list(set(Config.ADMINS + db_admins))
+        
+        # Get force sub channels
+        force_sub_channels = await self.db.get_force_sub_channels()
+        
+        # Get db channel
+        db_channel = await self.db.get_db_channel()
+        
+        # Get stats picture
+        welcome_pics = settings.get("welcome_pics", Config.WELCOME_PICS)
+        stats_pic = get_random_pic(welcome_pics)
+        
+        # Format message
+        stats_text = (
+            "<b>📊 BOT STATISTICS</b>\n\n"
+            "<blockquote>"
+            f"<b>👥 Users:</b> {total_users:,}\n"
+            f"<b>✅ Active:</b> {active_users:,}\n"
+            f"<b>🚫 Banned:</b> {banned_users:,}\n"
+            f"<b>👑 Admins:</b> {len(all_admins)}\n"
+            f"<b>📢 Force Sub:</b> {len(force_sub_channels)}\n"
+            f"<b>💾 DB Channel:</b> {'✅' if db_channel else '❌'}\n\n"
+            f"<i>Updated: {datetime.datetime.now().strftime('%H:%M:%S')}</i>"
+            "</blockquote>"
+        )
+        
+        buttons = [
+            [
+                InlineKeyboardButton("👥 Users", callback_data="users_menu"),
+                InlineKeyboardButton("🔄 Refresh", callback_data="refresh_stats")
+            ],
+            [
+                InlineKeyboardButton("⬅️ Back", callback_data="settings_menu"),
+                InlineKeyboardButton("❌ Close", callback_data="close")
+            ]
+        ]
+        
+        keyboard = InlineKeyboardMarkup(buttons)
+        
+        try:
+            response = await message.reply_photo(
+                photo=stats_pic,
+                caption=stats_text,
+                reply_markup=keyboard,
+                parse_mode=enums.ParseMode.HTML
+            )
+        except Exception as e:
+            logger.error(f"Error sending stats photo: {e}")
+            response = await message.reply(
+                stats_text,
+                reply_markup=keyboard,
+                parse_mode=enums.ParseMode.HTML
+            )
+        
+        await self.store_bot_message(user_id, response.id)
+        
+    except Exception as e:
+        logger.error(f"Error in stats command: {e}")
+        response = await message.reply("❌ <b>Error fetching statistics!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+# ===================================
+# BAN/UNBAN COMMANDS
+# ===================================
+
+async def banuser_list_command(self, message: Message):
+    """Handle /banuser_list command"""
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+    
+    try:
+        # Get banned users
+        banned_users = await self.db.get_banned_users()
+        
+        if not banned_users:
+            response = await message.reply("✅ <b>No banned users found!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
+            return
+        
+        # Format message - FIXED: Proper blockquote formatting
+        ban_text = "<b>🚫 𝗕𝗔𝗡𝗡𝗘𝗗 𝗨𝗦𝗘𝗥𝗦 𝗟𝗜𝗦𝗧</b>\n\n"
+        ban_text += "<blockquote expandable>"
+        
+        for i, ban in enumerate(banned_users[:10], 1):
+            ban_user_id = ban["user_id"]
+            reason = ban.get("reason", "No reason")
+            banned_date = ban.get("banned_date", "").strftime("%Y-%m-%d") if ban.get("banned_date") else "Unknown"
+            
+            ban_text += f"<b>{i}. ID:</b> <code>{ban_user_id}</code>\n"
+            ban_text += f"   <b>Reason:</b> {reason}\n"
+            ban_text += f"   <b>Date:</b> {banned_date}\n\n"
+        
+        ban_text += f"</blockquote>\n\n<b>📊 Total Banned:</b> {len(banned_users)}"
+        
+        buttons = [
+            [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu")],
+            [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
+        ]
+        
+        keyboard = InlineKeyboardMarkup(buttons)
+        
+        response = await message.reply(
+            ban_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+        
+        await self.store_bot_message(user_id, response.id)
+        
+    except Exception as e:
+        logger.error(f"Error in banuser_list command: {e}")
+        response = await message.reply("❌ <b>Error fetching banned users list!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+async def add_banuser_command(self, message: Message):
+    """Handle /add_banuser command"""
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+    
+    if len(message.command) < 2:
+        response = await message.reply(
+            "<b>🚫 𝗕𝗔𝗡 𝗨𝗦𝗘𝗥</b>\n\n"
+            "<blockquote>"
+            "<b>Usage:</b> <code>/add_banuser user_id1,user_id2 [reason]</code>\n\n"
+            "<b>Example:</b> <code>/add_banuser 123456789,987654321 Spamming</code>"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    try:
+        args = message.command[1].split(",")
+        reason = " ".join(message.command[2:]) if len(message.command) > 2 else "No reason provided"
+        
+        banned_users = []
+        
+        for arg in args:
+            arg = arg.strip()
+            
+            try:
+                ban_user_id = int(arg)
+                
+                # Check if user exists
+                if not await self.db.is_user_exist(ban_user_id):
+                    try:
+                        user = await self.get_users(ban_user_id)
+                        await self.db.add_user(ban_user_id, user.first_name, user.username)
+                    except:
+                        pass
+                
+                # Ban the user
+                await self.db.ban_user(ban_user_id, reason)
+                banned_users.append(str(ban_user_id))
+                
+                # Try to notify the user
+                try:
+                    await self.send_message(
+                        ban_user_id,
+                        f"🚫 <b>ʏᴏᴜ ʜᴀᴠᴇ ʙᴇᴇɴ ʙᴀɴɴᴇᴅ!</b>\n\n"
+                        "<blockquote>"
+                        f"<b>ʀᴇᴀsᴏɴ:</b> {reason}\n\n"
+                        f"ᴄᴏɴᴛᴀᴄᴛ ᴀᴅᴍɪɴ ɪғ ᴛʜɪs ɪs ᴀ ᴍɪsᴛᴀᴋᴇ."
+                        "</blockquote>",
+                        parse_mode=enums.ParseMode.HTML
+                    )
+                except:
+                    pass
+                
+            except ValueError:
+                await message.reply(f"❌ <b>Invalid user ID:</b> {arg}", parse_mode=enums.ParseMode.HTML)
+                continue
+        
+        if banned_users:
+            response = await message.reply(
+                f"✅ <b>Users Banned!</b>\n\n"
+                "<blockquote>"
+                f"<b>Banned {len(banned_users)} user(s):</b>\n"
+                + "\n".join(f"• {uid}" for uid in banned_users) +
+                f"\n\n<b>Reason:</b> {reason}"
+                "</blockquote>",
+                parse_mode=enums.ParseMode.HTML
+            )
+        else:
+            response = await message.reply("❌ <b>No users were banned!</b>", parse_mode=enums.ParseMode.HTML)
+        
+        await self.store_bot_message(user_id, response.id)
+    
+    except Exception as e:
+        logger.error(f"Error banning users: {e}")
+        response = await message.reply("❌ <b>Error banning users!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+async def del_banuser_command(self, message: Message):
+    """Handle /del_banuser command"""
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+    
+    if len(message.command) < 2:
+        response = await message.reply(
+            "<b>✅ 𝗨𝗡𝗕𝗔𝗡 𝗨𝗦𝗘𝗥</b>\n\n"
+            "<blockquote>"
+            "<b>Usage:</b> <code>/del_banuser user_id1,user_id2</code>\n\n"
+            "<b>Example:</b> <code>/del_banuser 123456789,987654321</code>"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    try:
+        args = message.command[1].split(",")
+        unbanned_users = []
+        
+        for arg in args:
+            arg = arg.strip()
+            
+            try:
+                unban_user_id = int(arg)
+                
+                # Check if user is banned
+                if not await self.db.is_user_banned(unban_user_id):
+                    await message.reply(f"⚠️ <b>User {unban_user_id} is not banned!</b>", parse_mode=enums.ParseMode.HTML)
+                    continue
+                
+                # Unban the user
+                await self.db.unban_user(unban_user_id)
+                unbanned_users.append(str(unban_user_id))
+                
+                # Try to notify the user
+                try:
+                    await self.send_message(
+                        unban_user_id,
+                        "<b>✅ ʏᴏᴜ ʜᴀᴠᴇ ʙᴇᴇɴ ᴜɴʙᴀɴɴᴇᴅ!</b>\n\n"
+                        "ʏᴏᴜ ᴄᴀɴ ɴᴏᴡ ᴜsᴇ ᴛʜᴇ ʙᴏᴛ ᴀɢᴀɪɴ.",
+                        parse_mode=enums.ParseMode.HTML
+                    )
+                except:
+                    pass
+                
+            except ValueError:
+                await message.reply(f"❌ <b>Invalid user ID: {arg}</b>", parse_mode=enums.ParseMode.HTML)
+                continue
+        
+        if unbanned_users:
+            response = await message.reply(
+                f"<b>✅ 𝗨𝗦𝗘𝗥𝗦 𝗨𝗡𝗕𝗔𝗡𝗡𝗘𝗗!</b>\n\n"
+                "<blockquote>"
+                f"<b>Unbanned {len(unbanned_users)} user(s):</b>\n"
+                + "\n".join(f"• <code>{user_id}</code>" for user_id in unbanned_users) +
+                "</blockquote>",
+                parse_mode=enums.ParseMode.HTML
+            )
+        else:
+            response = await message.reply("⚠️ <b>No users were unbanned!</b>", parse_mode=enums.ParseMode.HTML)
+        
+        await self.store_bot_message(user_id, response.id)
+    
+    except Exception as e:
+        logger.error(f"Error unbanning users: {e}")
+        response = await message.reply("❌ <b>Error unbanning users!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+# ===================================
+# SETTINGS COMMANDS
+# ===================================
+
+async def settings_command(self, message: Message):
+    """
+    Handle /settings command - Admin panel with working buttons
+    
+    IMPLEMENTS: FEATURE 1 (Clean Conversation)
+    """
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    # Get current settings
+    protect_content = settings.get("protect_content", True)
+    auto_delete = settings.get("auto_delete", False)
+    clean_conversation = settings.get("clean_conversation", True)
+    request_fsub = settings.get("request_fsub", False)
+
+    # Get settings picture
+    welcome_pics = settings.get("welcome_pics", Config.WELCOME_PICS)
+    settings_pic = get_random_pic(welcome_pics)
+
+    # Format settings text with blockquote
+    settings_text = (
+        "⚙️ <b>BOT SETTINGS PANEL</b>\n\n"
+        "<blockquote>"
+        f"🔒 <b>Protect Content:</b> {'✅' if protect_content else '❌'}\n"
+        f"🗑️ <b>Auto Delete Files:</b> {'✅' if auto_delete else '❌'}\n"
+        f"💬 <b>Clean Conversation:</b> {'✅' if clean_conversation else '❌'}\n"
+        f"📢 <b>Force Subscribe:</b> {'✅' if request_fsub else '❌'}"
+        "</blockquote>\n\n"
+        "<b>Select a category to configure:</b>"
+    )
+
+    # Create button grid
+    buttons = [
+        [
+            InlineKeyboardButton("📁 ғɪʟᴇs", callback_data="files_settings"),
+            InlineKeyboardButton("🗑️ ᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ", callback_data="auto_delete_settings")
+        ],
+        [
+            InlineKeyboardButton("📢 ғᴏʀᴄᴇ sᴜʙ", callback_data="force_sub_settings"),
+            InlineKeyboardButton("💬 ʙᴏᴛ ᴍsɢs", callback_data="bot_msg_settings")
+        ],
+        [
+            InlineKeyboardButton("📊 sᴛᴀᴛɪsᴛɪᴄs", callback_data="stats_menu"),
+            InlineKeyboardButton("👥 ᴜsᴇʀs", callback_data="users_menu")
+        ],
+        [
+            InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="start_menu"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close")
+        ]
+    ]
+
+    keyboard = InlineKeyboardMarkup(buttons)
+
+    try:
+        response = await message.reply_photo(
+            photo=settings_pic,
+            caption=settings_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+    except Exception as e:
+        logger.error(f"Error sending settings photo: {e}")
+        response = await message.reply(
+            settings_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+
+    # FEATURE 1: Store this message for future deletion
+    await self.store_bot_message(user_id, response.id)
+
+async def files_command(self, message: Message):
+    """
+    Handle /files command - File settings - FIXED
+    
+    IMPLEMENTS: FEATURE 1 (Clean Conversation)
+    """
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+    
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    # Get current settings
+    protect_content = settings.get("protect_content", True)
+    hide_caption = settings.get("hide_caption", False)
+    channel_button = settings.get("channel_button", True)
+    files_pics = settings.get("files_pics", Config.FILES_PICS)
+
+    # Get random files picture
+    files_pic = get_random_pic(files_pics)
+
+    # Create files settings text using helper function - FIXED
+    files_text = create_files_settings_text(protect_content, hide_caption, channel_button)
+    
+    # Create toggle buttons
+    buttons = [
+        [
+            InlineKeyboardButton(f"🔒 ᴘʀᴏᴛᴇᴄᴛ: {'✅' if protect_content else '❌'}", callback_data="toggle_protect_content"),
+            InlineKeyboardButton(f"🫥 ʜɪᴅᴇ: {'✅' if hide_caption else '❌'}", callback_data="toggle_hide_caption")
+        ],
+        [
+            InlineKeyboardButton(f"🔘 ʙᴜᴛᴛᴏɴ: {'✅' if channel_button else '❌'}", callback_data="toggle_channel_button"),
+            InlineKeyboardButton("🔘 ᴄᴜsᴛᴏᴍ ʙᴜᴛᴛᴏɴ", callback_data="custom_buttons_menu")
+        ],
+        [
+            InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close")
+        ]
+    ]
+    
+    keyboard = InlineKeyboardMarkup(buttons)
+    
+    try:
+        response = await message.reply_photo(
+            photo=files_pic,
+            caption=files_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+    except Exception as e:
+        logger.error(f"Error sending files photo: {e}")
+        response = await message.reply(
+            files_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+    
+    await self.store_bot_message(user_id, response.id)
+
+async def auto_del_command(self, message: Message):
+    """
+    Handle /auto_del command - Auto delete settings (THREE FEATURES) - FIXED
+    
+    IMPLEMENTS: FEATURE 1 (Clean Conversation)
+    """
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    # Get current settings for ALL THREE FEATURES
+    auto_delete = settings.get("auto_delete", False)
+    auto_delete_time = settings.get("auto_delete_time", 300)
+    clean_conversation = settings.get("clean_conversation", True)
+    show_instruction = settings.get("show_instruction", True)
+    auto_del_pics = settings.get("auto_del_pics", Config.AUTO_DEL_PICS)
+
+    # Get random auto delete picture
+    auto_del_pic = get_random_pic(auto_del_pics)
+
+    # Create auto delete text using helper function (shows all 3 features) - FIXED
+    auto_del_text = create_auto_delete_text(
+        auto_delete, 
+        auto_delete_time, 
+        clean_conversation, 
+        show_instruction
+    )
+    
+    buttons = []
+
+    # Toggle buttons for each feature
+    buttons.append([
+        InlineKeyboardButton(f"🗑️ ғɪʟᴇs: {'✅' if auto_delete else '❌'}", callback_data="toggle_auto_delete"),
+        InlineKeyboardButton(f"💬 ᴄʟᴇᴀɴ: {'✅' if clean_conversation else '❌'}", callback_data="toggle_clean_conversation")
+    ])
+    
+    buttons.append([
+        InlineKeyboardButton(f"📝 ɪɴsᴛʀᴜᴄᴛ: {'✅' if show_instruction else '❌'}", callback_data="toggle_show_instruction"),
+        InlineKeyboardButton("⏱️ sᴇᴛ ᴛɪᴍᴇʀ", callback_data="set_timer")
+    ])
+
+    # Time buttons (only show if auto delete files is enabled)
+    if auto_delete:
+        time_row1 = []
+        time_row2 = []
+        
+        for i, time_sec in enumerate(AUTO_DELETE_TIMES):
+            time_display = format_time(time_sec)
+            btn = InlineKeyboardButton(
+                f"{'✅ ' if time_sec == auto_delete_time else ''}{time_display}", 
+                callback_data=f"autodel_{time_sec}"
+            )
+            if i < 3:
+                time_row1.append(btn)
+            else:
+                time_row2.append(btn)
+        
+        if time_row1:
+            buttons.append(time_row1)
+        if time_row2:
+            buttons.append(time_row2)
+    
+    buttons.append([
+        InlineKeyboardButton("🔄 ʀᴇғʀᴇsʜ", callback_data="refresh_autodel"),
+        InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu")
+    ])
+    
+    buttons.append([
+        InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close")
+    ])
+    
+    keyboard = InlineKeyboardMarkup(buttons)
+    
+    try:
+        response = await message.reply_photo(
+            photo=auto_del_pic,
+            caption=auto_del_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+    except Exception as e:
+        logger.error(f"Error sending auto delete photo: {e}")
+        response = await message.reply(
+            auto_del_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+    
+    await self.store_bot_message(user_id, response.id)
+
+async def botsettings_command(self, message: Message):
+    """
+    Handle /botsettings command - Bot message settings
+    
+    IMPLEMENTS: FEATURE 1 (Clean Conversation)
+    """
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+        
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+    
+    # Get current settings
+    clean_conversation = settings.get("clean_conversation", True)
+    show_instruction = settings.get("show_instruction", True)
+    welcome_pics = settings.get("welcome_pics", Config.WELCOME_PICS)
+    
+    # Get random picture
+    settings_pic = get_random_pic(welcome_pics)
+    
+    settings_text = (
+        "<b>🤖 BOT MESSAGE SETTINGS</b>\n\n"
+        "<blockquote>"
+        f"<b>💬 Clean Conversation:</b> {'✅ ENABLED' if clean_conversation else '❌ DISABLED'}\n"
+        f"<b>📝 Show Instruction:</b> {'✅ ENABLED' if show_instruction else '❌ DISABLED'}"
+        "</blockquote>\n\n"
+        "<b>Feature Explanation:</b>\n"
+        "<blockquote expandable>"
+        "<b>Clean Conversation:</b>\n"
+        "Deletes previous bot message when sending new one. Keeps PM clean.\n\n"
+        "<b>Show Instruction:</b>\n"
+        "After files are deleted, shows instruction message with resend button. This message is NOT auto-deleted."
+        "</blockquote>"
+    )
+    
+    buttons = [
+        [
+            InlineKeyboardButton(f"💬 {'✅' if clean_conversation else '❌'}", callback_data="toggle_clean_conversation"),
+            InlineKeyboardButton(f"📝 {'✅' if show_instruction else '❌'}", callback_data="toggle_show_instruction")
+        ],
+        [
+            InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close")
+        ]
+    ]
+    
+    keyboard = InlineKeyboardMarkup(buttons)
+    
+    try:
+        response = await message.reply_photo(
+            photo=settings_pic,
+            caption=settings_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+    except Exception as e:
+        logger.error(f"Error sending bot settings photo: {e}")
+        response = await message.reply(
+            settings_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+    
+    await self.store_bot_message(user_id, response.id)
+
+# ===================================
+# BAN/UNBAN COMMANDS
+# ===================================
+
+async def ban_command(self, message: Message):
+    """Handle /ban command"""
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    if len(message.command) < 2:
+        response = await message.reply(
+            "🚫 <b>BAN USER</b>\n\n"
+            "<blockquote>"
+            "<b>Usage:</b> <code>/ban user_id [reason]</code>\n\n"
+            "<b>Example:</b> <code>/ban 123456789 Spamming</code>"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    try:
+        ban_user_id = int(message.command[1])
+        reason = " ".join(message.command[2:]) if len(message.command) > 2 else "No reason provided"
+
+        # Check if user exists
+        try:
+            user = await self.get_users(ban_user_id)
+        except:
+            response = await message.reply("❌ <b>User not found!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
+            return
+
+        # Ban the user
+        await self.db.ban_user(ban_user_id, reason)
+
+        # Try to notify the user
+        try:
+            await self.send_message(
+                ban_user_id,
+                f"🚫 <b>You have been banned!</b>\n\n"
+                "<blockquote>"
+                f"<b>Reason:</b> {reason}\n\n"
+                f"Contact admin if this is a mistake."
+                "</blockquote>",
+                parse_mode=enums.ParseMode.HTML
+            )
+        except:
+            pass
+
+        response = await message.reply(
+            f"✅ <b>User Banned!</b>\n\n"
+            "<blockquote>"
+            f"<b>👤 User:</b> {user.first_name}\n"
+            f"<b>🆔 ID:</b> <code>{ban_user_id}</code>\n"
+            f"<b>📝 Reason:</b> {reason}"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+
+        await self.store_bot_message(user_id, response.id)
+
+    except ValueError:
+        response = await message.reply("❌ <b>Invalid user ID!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+    except Exception as e:
+        logger.error(f"Error banning user: {e}")
+        response = await message.reply("❌ <b>Error banning user!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+async def unban_command(self, message: Message):
+    """Handle /unban command"""
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    if len(message.command) < 2:
+        response = await message.reply(
+            "✅ <b>UNBAN USER</b>\n\n"
+            "<blockquote>"
+            "<b>Usage:</b> <code>/unban user_id</code>\n\n"
+            "<b>Example:</b> <code>/unban 123456789</code>"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    try:
+        unban_user_id = int(message.command[1])
+
+        # Check if user is banned
+        if not await self.db.is_user_banned(unban_user_id):
+            response = await message.reply("⚠️ <b>User is not banned!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
+            return
+
+        # Unban the user
+        await self.db.unban_user(unban_user_id)
+
+        # Try to notify the user
+        try:
+            await self.send_message(
+                unban_user_id,
+                "✅ <b>You have been unbanned!</b>\n\n"
+                "You can now use the bot again.",
+                parse_mode=enums.ParseMode.HTML
+            )
+        except:
+            pass
+
+        response = await message.reply(
+            f"✅ <b>User Unbanned!</b>\n\n"
+            "<blockquote>"
+            f"<b>🆔 User ID:</b> <code>{unban_user_id}</code>\n"
+            f"<b>✅ Status:</b> Unbanned"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+
+        await self.store_bot_message(user_id, response.id)
+
+    except ValueError:
+        response = await message.reply("❌ <b>Invalid user ID!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+    except Exception as e:
+        logger.error(f"Error unbanning user: {e}")
+        response = await message.reply("❌ <b>Error unbanning user!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+# ===================================
+# FILE MANAGEMENT COMMANDS (FIXED VERSION)
+# ===================================
+
+async def genlink_command(self, message: Message):
+    """
+    Handle /genlink command - FIXED VERSION
+    
+    FIXES:
+    1. Checks if bot is admin in database channel
+    2. Properly generates working links
+    3. Handles errors correctly
+    """
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    if not message.reply_to_message:
+        response = await message.reply(
+            "🔗 <b>GENERATE LINK</b>\n\n"
+            "<blockquote>"
+            "<b>How to use:</b>\n"
+            "Reply to a file with /genlink to create a shareable link"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    if not self.db_channel:
+        response = await message.reply("❌ <b>Set database channel first!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    try:
+        # Check if bot is admin in database channel
+        try:
+            me = await self.get_me()
+            bot_id = me.id
+            member = await self.get_chat_member(self.db_channel, bot_id)
+            if member.status not in ["administrator", "creator"]:
+                # Bot is not admin - cannot forward message
+                response = await message.reply("❌ <b>Bot is not admin in the database channel!</b>", parse_mode=enums.ParseMode.HTML)
+                await self.store_bot_message(user_id, response.id)
+                return
+        except Exception as e:
+            logger.error(f"Error checking admin status: {e}")
+            response = await message.reply("❌ <b>Cannot access database channel!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
+            return
+
+        # Forward message to database channel
+        try:
+            forwarded = await message.reply_to_message.forward(self.db_channel)
+            
+            # Generate link
+            base64_id = await encode(str(forwarded.id))  # FIXED: Encode only the message ID
+            bot_username = Config.BOT_USERNAME
+            link = f"https://t.me/{bot_username}?start={base64_id}"  # FIXED: Use direct encoded ID
+
+            response = await message.reply(
+                f"✅ <b>Link Generated!</b>\n\n"
+                "<blockquote>"
+                f"<b>🔗 Link:</b>\n"
+                f"<code>{link}</code>\n\n"
+                f"<b>📁 File ID:</b> <code>{forwarded.id}</code>"
+                "</blockquote>",
+                parse_mode=enums.ParseMode.HTML,
+                disable_web_page_preview=True
+            )
+
+            await self.store_bot_message(user_id, response.id)
+
+        except Exception as e:
+            logger.error(f"Error forwarding message: {e}")
+            response = await message.reply("❌ <b>Error forwarding message to database channel!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
+
+    except Exception as e:
+        logger.error(f"Error generating link: {e}")
+        response = await message.reply("❌ <b>Error generating link!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+async def getlink_command(self, message: Message):
+    """Handle /getlink command - Alias for genlink"""
+    await self.genlink_command(message)
+
+# ===================================
+# BATCH COMMAND - FIXED VERSION
+# ===================================
+
+async def batch_command(self, message: Message):
+    """
+    Handle /batch command - First/Last Message Method
+    
+    IMPLEMENTS: FEATURE 1 (Clean Conversation)
+    """
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    if not self.db_channel:
+        response = await message.reply("❌ <b>Set database channel first!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # Initialize batch state with FIRST/LAST method
+    self.batch_state[user_id] = {
+        "method": "first_last",  # NEW: Method identifier
+        "step": "waiting_first",  # NEW: Current step
+        "first_msg_id": None,
+        "last_msg_id": None,
+        "channel_id": self.db_channel
+    }
+
+    response = await message.reply(
+        "📁 <b>BATCH MODE STARTED</b>\n\n"
+        "<blockquote>"
+        f"<b>Method:</b> First/Last Message\n"
+        f"<b>Max files:</b> {MAX_BATCH_SIZE}\n\n"
+        f"<b>📝 Step 1:</b>\n"
+        "Go to your database channel and forward the <b>FIRST message</b> (starting file) to me.\n\n"
+        f"<i>Example: If you want Episodes 1-50, forward Episode 1</i>"
+        "</blockquote>",
+        parse_mode=enums.ParseMode.HTML
+    )
+
+    await self.store_bot_message(user_id, response.id)
+
+# ===================================
+# CHANNEL MANAGEMENT COMMANDS (FIXED)
+# ===================================
+
+async def setchannel_command(self, message: Message):
+    """Handle /setchannel command"""
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    if len(message.command) < 2:
+        response = await message.reply(
+            "📺 <b>SET DATABASE CHANNEL</b>\n\n"
+            "<blockquote>"
+            "<b>Usage:</b> <code>/setchannel channel_id</code>\n\n"
+            "<b>Example:</b> <code>/setchannel -1001234567890</code>\n\n"
+            "<b>How to get Channel ID:</b>\n"
+            "1. Add @RawDataBot to your channel\n"
+            "2. Send any message\n"
+            "3. Copy the chat_id (it will be negative)"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    try:
+        channel_id = int(message.command[1])
+
+        # Check if bot is admin in channel
+        try:
+            chat = await self.get_chat(channel_id)
+            me = await self.get_me()
+            member = await self.get_chat_member(channel_id, me.id)
+            
+            if member.status not in ["administrator", "creator"]:
+                response = await message.reply("❌ <b>Bot must be admin in the channel!</b>", parse_mode=enums.ParseMode.HTML)
+                await self.store_bot_message(user_id, response.id)
+                return
+
+        except Exception as e:
+            response = await message.reply(f"❌ <b>Error accessing channel:</b>\n<code>{e}</code>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
+            return
+
+        # Set database channel
+        await self.db.set_db_channel(channel_id)
+        self.db_channel = channel_id
+
+        response = await message.reply(
+            f"✅ <b>Database Channel Set!</b>\n\n"
+            "<blockquote>"
+            f"<b>📺 Channel:</b> {chat.title}\n"
+            f"<b>🆔 ID:</b> <code>{channel_id}</code>\n"
+            f"<b>👤 Username:</b> @{chat.username if chat.username else 'Private'}"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+
+        await self.store_bot_message(user_id, response.id)
+
+    except ValueError:
+        response = await message.reply("❌ <b>Invalid channel ID!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+    except Exception as e:
+        logger.error(f"Error setting channel: {e}")
+        response = await message.reply("❌ <b>Error setting channel!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+async def checkchannel_command(self, message: Message):
+    """
+    Handle /checkchannel command - FIXED VERSION
+    
+    FIXED: Now properly checks if bot is admin in the channel
+    """
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    if not self.db_channel:
+        response = await message.reply("❌ <b>No database channel set!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    try:
+        chat = await self.get_chat(self.db_channel)
+        me = await self.get_me()
+        bot_id = me.id
+        
+        # FIXED: Check bot's admin status in the channel
+        try:
+            member = await self.get_chat_member(self.db_channel, bot_id)
+            
+            if member.status == "creator":
+                status = "✅ Creator (Owner)"
+                bot_permissions = "✅ Full access"
+            elif member.status == "administrator":
+                status = "✅ Administrator"
+                permissions = []
+                if member.privileges:
+                    if getattr(member.privileges, 'can_post_messages', False):
+                        permissions.append("📝 Post")
+                    if getattr(member.privileges, 'can_delete_messages', False):
+                        permissions.append("🗑️ Delete")
+                bot_permissions = "✅ " + ", ".join(permissions) if permissions else "✅ Admin"
+            else:
+                status = f"❌ Not Admin (Status: {member.status})"
+                bot_permissions = "❌ No access"
+                
+        except Exception as e:
+            logger.error(f"Error checking admin: {e}")
+            status = "⚠️ Error"
+            bot_permissions = f"⚠️ {str(e)[:50]}"
+
+        response = await message.reply(
+            f"📊 <b>CHANNEL STATUS</b>\n\n"
+            "<blockquote>"
+            f"<b>📺 Channel:</b> {chat.title}\n"
+            f"<b>🆔 ID:</b> <code>{self.db_channel}</code>\n"
+            f"<b>👤 Username:</b> @{chat.username if chat.username else 'Private'}\n"
+            f"<b>🤖 Bot Status:</b> {status}\n"
+            f"<b>🔧 Permissions:</b> {bot_permissions}\n"
+            f"<b>👥 Members:</b> {getattr(chat, 'members_count', 'Unknown')}"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+
+        await self.store_bot_message(user_id, response.id)
+
+    except Exception as e:
+        logger.error(f"Error checking channel: {e}")
+        response = await message.reply(
+            f"❌ <b>Error checking channel</b>\n\n<blockquote>{str(e)[:100]}</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+
+async def removechannel_command(self, message: Message):
+    """Handle /removechannel command"""
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    if not self.db_channel:
+        response = await message.reply("❌ <b>No database channel to remove!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    try:
+        old_channel_id = self.db_channel
+        
+        # Remove database channel
+        await self.db.remove_db_channel()
+        self.db_channel = None
+
+        response = await message.reply(
+            f"✅ <b>Database Channel Removed!</b>\n\n"
+            "<blockquote>"
+            f"<b>🆔 Channel ID:</b> <code>{old_channel_id}</code>\n"
+            f"<b>🗑️ Status:</b> Removed"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+
+        await self.store_bot_message(user_id, response.id)
+
+    except Exception as e:
+        logger.error(f"Error removing channel: {e}")
+        response = await message.reply("❌ <b>Error removing channel!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+# ===================================
+# FORCE SUBSCRIBE COMMANDS
+# ===================================
+
+async def forcesub_command(self, message: Message):
+    """Handle /forcesub command"""
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    # Get current force sub channels
+    force_sub_channels = await self.db.get_force_sub_channels()
+    
+    # Get force sub pictures
+    force_sub_pics = settings.get("force_sub_pics", Config.FORCE_SUB_PICS)
+    force_sub_pic = get_random_pic(force_sub_pics)
+    
+    # Check request_fsub setting
+    request_fsub = settings.get("request_fsub", False)
+    request_status = "✅ ENABLED" if request_fsub else "❌ DISABLED"
+    
+    # Format message
+    if force_sub_channels:
+        channels_text = "<b>📢 FORCE SUBSCRIBE SETTINGS</b>\n\n"
+        channels_text += f"🔄 <b>Request FSub:</b> {request_status}\n\n"
+        channels_text += "<b>Current Channels:</b>\n"
+        
+        for i, channel in enumerate(force_sub_channels, 1):
+            channel_id = channel.get("channel_id")
+            username = channel.get("channel_username", "No username")
+            
+            channels_text += f"{i}. <b>Channel ID:</b> <code>{channel_id}</code>\n"
+            channels_text += f"   <b>Username:</b> @{username}\n\n"
+        
+        channels_text += f"📊 <b>Total Channels:</b> {len(force_sub_channels)}"
+    else:
+        channels_text = "<b>📢 FORCE SUBSCRIBE SETTINGS</b>\n\n"
+        channels_text += f"🔄 <b>Request FSub:</b> {request_status}\n\n"
+        channels_text += "No force subscribe channels configured.\n"
+        channels_text += "Use /add_fsub to add channels."
+    
+    # Create buttons
+    buttons = []
+    
+    # Toggle Request FSub
+    if request_fsub:
+        buttons.append([
+            InlineKeyboardButton("❌ DISABLE FSUB", callback_data="reqfsub_off"),
+            InlineKeyboardButton("⚙️ CHANNELS", callback_data="fsub_chnl_menu")
+        ])
+    else:
+        buttons.append([
+            InlineKeyboardButton("✅ ENABLE FSUB", callback_data="reqfsub_on"),
+            InlineKeyboardButton("⚙️ CHANNELS", callback_data="fsub_chnl_menu")
+        ])
+    
+    # Management buttons
+    buttons.append([
+        InlineKeyboardButton("➕ ADD CHANNEL", callback_data="add_fsub_menu"),
+        InlineKeyboardButton("➖ REMOVE CHANNEL", callback_data="del_fsub_menu")  # FIXED: Now works
+    ])
+    
+    buttons.append([
+        InlineKeyboardButton("🔄 REFRESH", callback_data="refresh_fsub"),
+        InlineKeyboardButton("📊 TEST", callback_data="test_fsub")
+    ])
+    
+    buttons.append([
+        InlineKeyboardButton("🔙 BACK", callback_data="settings_menu"),
+        InlineKeyboardButton("❌ CLOSE", callback_data="close")
+    ])
+    
+    keyboard = InlineKeyboardMarkup(buttons)
+    
+    try:
+        response = await message.reply_photo(
+            photo=force_sub_pic,
+            caption=channels_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+    except Exception as e:
+        logger.error(f"Error sending forcesub photo: {e}")
+        response = await message.reply(
+            channels_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+    
+    await self.store_bot_message(user_id, response.id)
+
+async def req_fsub_command(self, message: Message):
+    """Handle /req_fsub command"""
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    # Get current settings
+    request_fsub = settings.get("request_fsub", False)
+    force_sub_pics = settings.get("force_sub_pics", Config.FORCE_SUB_PICS)
+    
+    # Get random force sub picture
+    force_sub_pic = get_random_pic(force_sub_pics)
+    
+    # Format
+    status = "✅ ENABLED" if request_fsub else "❌ DISABLED"
+    
+    req_fsub_text = (
+        "<b>📢 REQUEST FSUB SETTINGS</b>\n\n"
+        "<blockquote>"
+        f"<b>Status:</b> {status}\n\n"
+        f"<i>When enabled, users must join all force subscribe channels before using the bot.</i>"
+        "</blockquote>"
+    )
+    
+    # Create toggle buttons
+    buttons = []
+    
+    if request_fsub:
+        buttons.append([
+            InlineKeyboardButton("❌ DISABLE", callback_data="reqfsub_off"),
+            InlineKeyboardButton("⚙️ CHANNELS", callback_data="fsub_chnl_menu")
+        ])
+    else:
+        buttons.append([
+            InlineKeyboardButton("✅ ENABLE", callback_data="reqfsub_on"),
+            InlineKeyboardButton("⚙️ CHANNELS", callback_data="fsub_chnl_menu")
+        ])
+    
+    buttons.append([
+        InlineKeyboardButton("🔙 BACK", callback_data="settings_menu"),
+        InlineKeyboardButton("❌ CLOSE", callback_data="close")
+    ])
+    
+    keyboard = InlineKeyboardMarkup(buttons)
+    
+    try:
+        response = await message.reply_photo(
+            photo=force_sub_pic,
+            caption=req_fsub_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+    except Exception as e:
+        logger.error(f"Error sending force sub photo: {e}")
+        response = await message.reply(
+            req_fsub_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+    
+    await self.store_bot_message(user_id, response.id)
+
+async def fsub_chnl_command(self, message: Message):
+    """Handle /fsub_chnl command"""
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    # Get force sub channels
+    force_sub_channels = await self.db.get_force_sub_channels()
+    
+    # Get force sub pictures
+    force_sub_pics = settings.get("force_sub_pics", Config.FORCE_SUB_PICS)
+    force_sub_pic = get_random_pic(force_sub_pics)
+    
+    # Format message
+    if force_sub_channels:
+        channels_text = "<b>📢 FORCE SUBSCRIBE CHANNELS</b>\n\n"
+        channels_text += "<blockquote>"
+        
+        for i, channel in enumerate(force_sub_channels, 1):
+            channel_id = channel.get("channel_id")
+            username = channel.get("channel_username", "No username")
+            
+            channels_text += f"<b>{i}. Channel ID:</b> <code>{channel_id}</code>\n"
+            channels_text += f"   <b>Username:</b> @{username}\n\n"
+        
+        channels_text += f"</blockquote>\n\n"
+        channels_text += f"📊 <b>Total Channels:</b> {len(force_sub_channels)}"
+    else:
+        channels_text = "<b>📢 FORCE SUBSCRIBE CHANNELS</b>\n\n"
+        channels_text += "<blockquote>"
+        channels_text += "No force subscribe channels configured.\n"
+        channels_text += "Use /add_fsub to add channels."
+        channels_text += "</blockquote>"
+    
+    # Create buttons
+    buttons = []
+    
+    if force_sub_channels:
+        buttons.append([
+            InlineKeyboardButton("➕ ADD CHANNEL", callback_data="add_fsub_menu"),
+            InlineKeyboardButton("➖ REMOVE CHANNEL", callback_data="del_fsub_menu")
+        ])
+    else:
+        buttons.append([
+            InlineKeyboardButton("➕ ADD CHANNEL", callback_data="add_fsub_menu")
+        ])
+    
+    buttons.append([
+        InlineKeyboardButton("🔄 REFRESH", callback_data="refresh_fsub"),
+        InlineKeyboardButton("🔙 BACK", callback_data="force_sub_settings")
+    ])
+    
+    buttons.append([
+        InlineKeyboardButton("❌ CLOSE", callback_data="close")
+    ])
+    
+    keyboard = InlineKeyboardMarkup(buttons)
+    
+    try:
+        response = await message.reply_photo(
+            photo=force_sub_pic,
+            caption=channels_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+    except Exception as e:
+        logger.error(f"Error sending fsub channels photo: {e}")
+        response = await message.reply(
+            channels_text,
+            reply_markup=keyboard,
+            parse_mode=enums.ParseMode.HTML
+        )
+    
+    await self.store_bot_message(user_id, response.id)
+
+async def add_fsub_command(self, message: Message):
+    """Handle /add_fsub command"""
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    if len(message.command) < 2:
+        response = await message.reply(
+            "➕ <b>ADD FORCE SUB CHANNEL</b>\n\n"
+            "<blockquote>"
+            "<b>Usage:</b> <code>/add_fsub channel_id [username]</code>\n\n"
+            "<b>Examples:</b>\n"
+            "<code>/add_fsub -100123456789 @channel_username</code>\n"
+            "<code>/add_fsub -100123456789</code>\n\n"
+            "<b>Note:</b> Bot must be admin in the channel!"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    try:
+        channel_id = int(message.command[1])
+        username = message.command[2] if len(message.command) > 2 else None
+        
+        if username:
+            username = username.lstrip('@')
+        
+        # Check if bot is admin in channel
+        try:
+            me = await self.get_me()
+            await self.get_chat_member(channel_id, me.id)
+        except Exception as e:
+            response = await message.reply(f"❌ <b>Bot is not admin in channel {channel_id}!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
+            return
+        
+        # Add channel to database
+        await self.db.add_force_sub_channel(channel_id, username)
+        
+        # Update local cache
+        self.force_sub_channels = await self.db.get_force_sub_channels()
+        
+        response = await message.reply(
+            f"✅ <b>Channel Added!</b>\n\n"
+            "<blockquote>"
+            f"<b>📢 Channel ID:</b> <code>{channel_id}</code>\n"
+            f"<b>👤 Username:</b> @{username if username else 'Private'}\n\n"
+            f"<b>Total channels:</b> {len(self.force_sub_channels)}"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        
+        await self.store_bot_message(user_id, response.id)
+        
+    except ValueError:
+        response = await message.reply("❌ <b>Invalid channel ID! Must be a number.</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+    except Exception as e:
+        logger.error(f"Error adding force sub channel: {e}")
+        response = await message.reply("❌ <b>Error adding channel!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+async def del_fsub_command(self, message: Message):
+    """Handle /del_fsub command"""
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    if len(message.command) < 2:
+        response = await message.reply(
+            "➖ <b>REMOVE FORCE SUB CHANNEL</b>\n\n"
+            "<blockquote>"
+            "<b>Usage:</b> <code>/del_fsub channel_id</code>\n\n"
+            "<b>Example:</b> <code>/del_fsub -100123456789</code>"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    try:
+        channel_id = int(message.command[1])
+        
+        # Remove channel from database
+        await self.db.remove_force_sub_channel(channel_id)
+        
+        # Update local cache
+        self.force_sub_channels = await self.db.get_force_sub_channels()
+        
+        response = await message.reply(
+            f"✅ <b>Channel Removed!</b>\n\n"
+            "<blockquote>"
+            f"<b>📢 Channel ID:</b> <code>{channel_id}</code>\n\n"
+            f"<b>Remaining channels:</b> {len(self.force_sub_channels)}"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        
+        await self.store_bot_message(user_id, response.id)
+        
+    except ValueError:
+        response = await message.reply("❌ <b>Invalid channel ID!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+    except Exception as e:
+        logger.error(f"Error removing force sub channel: {e}")
+        response = await message.reply("❌ <b>Error removing channel!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+# ===================================
+# BROADCAST COMMAND
+# ===================================
+
+async def broadcast_command(self, message: Message):
+    """
+    Handle /broadcast command
+    
+    IMPLEMENTS: FEATURE 1 (Clean Conversation)
+    """
+    user_id = message.from_user.id
+    
+    # Check admin permission
+    if not await self.is_user_admin(user_id):
+        response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    # FEATURE 1: Delete previous bot message
+    settings = await self.db.get_settings()
+    if settings.get("clean_conversation", True):
+        await self.delete_previous_bot_message(user_id)
+
+    if not message.reply_to_message:
+        response = await message.reply(
+            "📢 <b>BROADCAST MESSAGE</b>\n\n"
+            "<blockquote>"
+            "<b>How to use:</b>\n"
+            "1. Send your message (text, photo, video, etc.)\n"
+            "2. Reply to that message with /broadcast\n\n"
+            "<b>Example:</b>\n"
+            "Your broadcast message here...\n"
+            "/broadcast"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await self.store_bot_message(user_id, response.id)
+        return
+
+    try:
+        # Get all users
+        users = await self.db.get_all_users()
+        total_users = len(users)
+
+        if total_users == 0:
+            response = await message.reply("❌ <b>No users to broadcast to!</b>", parse_mode=enums.ParseMode.HTML)
+            await self.store_bot_message(user_id, response.id)
+            return
+
+        response = await message.reply(f"📢 <b>Broadcasting to {total_users:,} users...</b>", parse_mode=enums.ParseMode.HTML)
+
+        success = 0
+        failed = 0
+
+        # Send to all users
+        for target_user_id in users:
+            try:
+                # Skip if user is banned
+                if await self.db.is_user_banned(target_user_id):
+                    failed += 1
+                    continue
+
+                # Forward the message
+                await message.reply_to_message.forward(target_user_id)
+                success += 1
+
+                # Small delay to avoid flood
+                await asyncio.sleep(0.1)
+
+            except Exception as e:
+                failed += 1
+                logger.error(f"Failed to send to {target_user_id}: {e}")
+
+        await response.edit_text(
+            f"✅ <b>Broadcast Complete!</b>\n\n"
+            "<blockquote>"
+            f"<b>📊 Total Users:</b> {total_users:,}\n"
+            f"<b>✅ Success:</b> {success:,}\n"
+            f"<b>❌ Failed:</b> {failed:,}\n"
+            f"<b>📈 Success Rate:</b> {(success/total_users*100):.1f}%"
+            "</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+
+        await self.store_bot_message(user_id, response.id)
+
+    except Exception as e:
+        logger.error(f"Error in broadcast command: {e}")
+        response = await message.reply("❌ <b>Error during broadcast!</b>", parse_mode=enums.ParseMode.HTML)
+        await self.store_bot_message(user_id, response.id)
+
+# ===================================
+# FONT STYLE HANDLERS (MODULE LEVEL - OUTSIDE CLASS)
+# ===================================
+
 @Client.on_message(filters.private & filters.command(["font"]))
 async def style_buttons(c, m, cb=False):
     buttons = [[
@@ -3854,7 +5781,7 @@ async def style_buttons(c, m, cb=False):
         InlineKeyboardButton('𝗦𝗮𝗻𝘀', callback_data='style+sans'),
         InlineKeyboardButton('𝙎𝙖𝙣𝙨', callback_data='style+slant_sans'),
     ],[
-        InlineKeyboardButton('𝘚𝘢𝘯𝘀', callback_data='style+slant'),
+        InlineKeyboardButton('𝘚𝘢𝘯𝘴', callback_data='style+slant'),
         InlineKeyboardButton('𝖲𝖺𝗇𝗌', callback_data='style+sim'),
         InlineKeyboardButton('Ⓒ︎Ⓘ︎Ⓡ︎Ⓒ︎Ⓛ︎Ⓔ︎Ⓢ︎', callback_data='style+circles')
     ],[
@@ -3872,9 +5799,9 @@ async def style_buttons(c, m, cb=False):
     if not cb:
         if ' ' in m.text:
             title = m.text.split(" ", 1)[1]
-            await m.reply_text(title, reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=m.id)                     
+            await m.reply_text(title, reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=m.id, parse_mode=enums.ParseMode.HTML)                     
         else:
-            await m.reply_text(text="Ente Any Text Eg:- `/font [text]`")    
+            await m.reply_text(text="Enter Any Text Eg:- `/font [text]`", parse_mode=enums.ParseMode.HTML)    
     else:
         await m.answer()
         await m.message.edit_reply_markup(InlineKeyboardMarkup(buttons))
@@ -4003,1933 +5930,13 @@ async def style(c, m):
     r, oldtxt = m.message.reply_to_message.text.split(None, 1) 
     new_text = cls(oldtxt)            
     try:
-        await m.message.edit_text(f"`{new_text}`\n\n👆 Click To Copy", reply_markup=m.message.reply_markup)
+        await m.message.edit_text(f"`{new_text}`\n\n👆 Click To Copy", reply_markup=m.message.reply_markup, parse_mode=enums.ParseMode.HTML)
     except Exception as e:
         print(e)
-    # ===================================
-    # ADMIN MANAGEMENT COMMANDS
-    # ===================================
-    
-    async def admin_list_command(self, message: Message):
-        """
-        Handle /admin_list command
-        
-        IMPLEMENTS: FEATURE 1 (Clean Conversation)
-        """
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-        
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-        
-        try:
-            # Get admins
-            db_admins = await self.db.get_admins()
-            all_admins = list(set(Config.ADMINS + db_admins))
-            
-            if not all_admins:
-                response = await message.reply("❌ <b>No admins found!</b>", parse_mode=enums.ParseMode.HTML)
-                await self.store_bot_message(user_id, response.id)
-                return
-            
-            # Format message
-            admin_text = (
-                "<b>🤖 𝗨𝗦𝗘𝗥 𝗦𝗘𝗧𝗧𝗜𝗡𝗚 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦 :</b>\n\n"
-                "<blockquote expandable>"
-                "<b>/admin_list</b> - ᴠɪᴇᴡ ᴛʜᴇ ᴀᴠᴀɪʟᴀʙʟᴇ ᴀᴅᴍɪɴ ʟɪsᴛ (ᴏᴡɴᴇʀ)\n\n"
-                "<b>/add_admins</b> - ᴀᴅᴅ ᴏɴᴇ ᴏʀ ᴍᴜʟᴛɪᴘʟᴇ ᴜsᴇʀ ɪᴅs ᴀs ᴀᴅᴍɪɴ (ᴏᴡɴᴇʀ)\n\n"
-                "<b>/del_admins</b> - ᴅᴇʟᴇᴛᴇ ᴏɴᴇ ᴏʀ ᴍᴜʟᴛɪᴘʟᴇ ᴜsᴇʀ ɪᴅs ғʀᴏᴍ ᴀᴅᴍɪɴs (ᴏᴡɴᴇʀ)\n\n"
-                "<b>/banuser_list</b> - ᴠɪᴇᴡ ᴛʜᴇ ᴀᴠᴀɪʟᴀʙʟᴇ ʙᴀɴɴᴇᴅ ᴜsᴇʀ ʟɪsᴛ (ᴀᴅᴍɪɴs)\n\n"
-                "<b>/add_banuser</b> - ᴀᴅᴅ ᴏɴᴇ ᴏʀ ᴍᴜʟᴛɪᴘʟᴇ ᴜsᴇʀ ɪᴅs ɪɴ ʙᴀɴɴᴇᴅ ʟɪsᴛ (ᴀᴅᴍɪɴs)\n\n"
-                "<b>/del_banuser</b> - ᴅᴇʟᴇᴛᴇ ᴏɴᴇ ᴏʀ ᴍᴜʟᴛɪᴘʟᴇ ᴜsᴇʀ ɪᴅs ғʀᴏᴍ ʙᴀɴɴᴇᴅ ʟɪsᴛ (ᴀᴅᴍɪɴs)"
-                "</blockquote>\n\n"
-                f"<b>👑 Total Admins:</b> {len(all_admins)}"
-            )
-            
-            buttons = [
-                [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu")],
-                [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
-            ]
-            
-            keyboard = InlineKeyboardMarkup(buttons)
-            
-            response = await message.reply(
-                admin_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-            
-            await self.store_bot_message(user_id, response.id)
-            
-        except Exception as e:
-            logger.error(f"Error in admin_list command: {e}")
-            response = await message.reply("❌ <b>Error fetching admin list!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-    
-    async def add_admins_command(self, message: Message):
-        """
-        Handle /add_admins command
-        
-        IMPLEMENTS: FEATURE 1 (Clean Conversation)
-        """
-        user_id = message.from_user.id
-        
-        # Check if user is owner
-        if user_id != Config.OWNER_ID:
-            response = await message.reply("❌ <b>Owner only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-        
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-        
-        if len(message.command) < 2:
-            response = await message.reply(
-                "<b>➕ 𝗔𝗗𝗗 𝗔𝗗𝗠𝗜𝗡𝗦</b>\n\n"
-                "<blockquote>"
-                "<b>Usage:</b> <code>/add_admins user_id1,user_id2</code>\n\n"
-                "<b>Example:</b> <code>/add_admins 123456789,987654321</code>"
-                "</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            await self.store_bot_message(user_id, response.id)
-            return
-        
-        try:
-            args = message.command[1].split(",")
-            added_admins = []
-            
-            for arg in args:
-                arg = arg.strip()
-                
-                try:
-                    admin_id = int(arg)
-                    
-                    # Check if user exists
-                    try:
-                        user = await self.get_users(admin_id)
-                        
-                        # Add to database
-                        await self.db.add_admin(admin_id)
-                        
-                        # Add to Config.ADMINS if not already
-                        if admin_id not in Config.ADMINS:
-                            Config.ADMINS.append(admin_id)
-                        
-                        # Refresh admin cache
-                        self.admin_cache.add(admin_id)
-                        
-                        added_admins.append(f"{user.first_name} ({admin_id})")
-                        
-                    except Exception as e:
-                        await message.reply(f"❌ <b>Error adding {arg}:</b> {str(e)}", parse_mode=enums.ParseMode.HTML)
-                        continue
-                    
-                except ValueError:
-                    await message.reply(f"❌ <b>Invalid user ID:</b> {arg}", parse_mode=enums.ParseMode.HTML)
-                    continue
-            
-            if added_admins:
-                response = await message.reply(
-                    f"✅ <b>ᴀᴅᴍɪɴs ᴀᴅᴅᴇᴅ!</b>\n\n"
-                    f"<blockquote>"
-                    f"<b>ᴀᴅᴅᴇᴅ {len(added_admins)} ᴀᴅᴍɪɴ(s):</b>\n"
-                    + "\n".join(f"• {admin}" for admin in added_admins) +
-                    "</blockquote>",
-                    parse_mode=enums.ParseMode.HTML
-                )
-            else:
-                response = await message.reply("❌ <b>No admins were added!</b>", parse_mode=enums.ParseMode.HTML)
-            
-            await self.store_bot_message(user_id, response.id)
-        
-        except Exception as e:
-            logger.error(f"Error adding admins: {e}")
-            response = await message.reply("❌ <b>Error adding admins!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-    
-    async def del_admins_command(self, message: Message):
-        """
-        Handle /del_admins command
-        
-        IMPLEMENTS: FEATURE 1 (Clean Conversation)
-        """
-        user_id = message.from_user.id
-        
-        # Check if user is owner
-        if user_id != Config.OWNER_ID:
-            response = await message.reply("❌ <b>Owner only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-        
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-        
-        if len(message.command) < 2:
-            response = await message.reply(
-                "<b>🗑️ ᴅᴇʟᴇᴛᴇ ᴀᴅᴍɪɴs</b>\n\n"
-                "<blockquote>"
-                "<b>Usage:</b> <code>/del_admins user_id1,user_id2</code>\n\n"
-                "<b>Example:</b> <code>/del_admins 123456789,987654321</code>\n\n"
-                "<b>Note:</b> Cannot remove owner!"
-                "</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            await self.store_bot_message(user_id, response.id)
-            return
-        
-        try:
-            args = message.command[1].split(",")
-            removed_admins = []
-            
-            for arg in args:
-                arg = arg.strip()
-                
-                try:
-                    admin_id = int(arg)
-                    
-                    # Check if trying to remove owner
-                    if admin_id == Config.OWNER_ID:
-                        await message.reply(f"❌ <b>Cannot remove owner ({admin_id})!</b>", parse_mode=enums.ParseMode.HTML)
-                        continue
-                    
-                    # Remove from database
-                    await self.db.remove_admin(admin_id)
-                    
-                    # Remove from Config.ADMINS if present
-                    if admin_id in Config.ADMINS:
-                        Config.ADMINS.remove(admin_id)
-                    
-                    # Remove from cache
-                    if admin_id in self.admin_cache:
-                        self.admin_cache.remove(admin_id)
-                    
-                    removed_admins.append(str(admin_id))
-                    
-                except ValueError:
-                    await message.reply(f"❌ <b>Invalid user ID:</b> {arg}", parse_mode=enums.ParseMode.HTML)
-                    continue
-            
-            if removed_admins:
-                response = await message.reply(
-                    f"✅ <b>Admins Removed!</b>\n\n"
-                    f"<blockquote>"
-                    f"<b>Removed {len(removed_admins)} admin(s):</b>\n"
-                    + "\n".join(f"• {admin}" for admin in removed_admins) +
-                    "</blockquote>",
-                    parse_mode=enums.ParseMode.HTML
-                )
-            else:
-                response = await message.reply("❌ <b>No admins were removed!</b>", parse_mode=enums.ParseMode.HTML)
-            
-            await self.store_bot_message(user_id, response.id)
-        
-        except Exception as e:
-            logger.error(f"Error removing admins: {e}")
-            response = await message.reply("❌ <b>Error removing admins!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-    
-    # ===================================
-    # USER STATISTICS COMMANDS
-    # ===================================
-    
-    async def users_command(self, message: Message):
-        """
-        Handle /users command
-        
-        IMPLEMENTS: FEATURE 1 (Clean Conversation)
-        """
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-        
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-        
-        try:
-            # Get counts
-            total_users = await self.db.total_users_count()
-            banned_users = await self.db.get_banned_count()
-            active_users = total_users - banned_users
-            
-            # Get stats picture
-            welcome_pics = settings.get("welcome_pics", Config.WELCOME_PICS)
-            stats_pic = get_random_pic(welcome_pics)
-            
-            # Format message
-            stats_text = (
-                "<b>👥 USER STATISTICS</b>\n\n"
-                "<blockquote>"
-                f"<b>📊 Total Users:</b> {total_users:,}\n"
-                f"<b>✅ Active Users:</b> {active_users:,}\n"
-                f"<b>🚫 Banned Users:</b> {banned_users:,}\n\n"
-                f"<i>Last updated: {datetime.datetime.now().strftime('%H:%M:%S')}</i>"
-                "</blockquote>"
-            )
-            
-            buttons = [
-                [
-                    InlineKeyboardButton("🔄 Refresh", callback_data="refresh_users"),
-                    InlineKeyboardButton("📊 Stats", callback_data="stats_menu")
-                ],
-                [
-                    InlineKeyboardButton("⬅️ Back", callback_data="settings_menu"),
-                    InlineKeyboardButton("❌ Close", callback_data="close")
-                ]
-            ]
-            
-            keyboard = InlineKeyboardMarkup(buttons)
-            
-            try:
-                response = await message.reply_photo(
-                    photo=stats_pic,
-                    caption=stats_text,
-                    reply_markup=keyboard,
-                    parse_mode=enums.ParseMode.HTML
-                )
-            except Exception as e:
-                logger.error(f"Error sending stats photo: {e}")
-                response = await message.reply(
-                    stats_text,
-                    reply_markup=keyboard,
-                    parse_mode=enums.ParseMode.HTML
-                )
-            
-            await self.store_bot_message(user_id, response.id)
-            
-        except Exception as e:
-            logger.error(f"Error in users command: {e}")
-            response = await message.reply("❌ <b>Error fetching user statistics!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-    
-    async def stats_command(self, message: Message):
-        """
-        Handle /stats command
-        
-        IMPLEMENTS: FEATURE 1 (Clean Conversation)
-        """
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-        
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-        
-        try:
-            # Get counts
-            total_users = await self.db.total_users_count()
-            banned_users = await self.db.get_banned_count()
-            active_users = total_users - banned_users
-            
-            # Get all admins
-            db_admins = await self.db.get_admins()
-            all_admins = list(set(Config.ADMINS + db_admins))
-            
-            # Get force sub channels
-            force_sub_channels = await self.db.get_force_sub_channels()
-            
-            # Get db channel
-            db_channel = await self.db.get_db_channel()
-            
-            # Get stats picture
-            welcome_pics = settings.get("welcome_pics", Config.WELCOME_PICS)
-            stats_pic = get_random_pic(welcome_pics)
-            
-            # Format message
-            stats_text = (
-                "<b>📊 BOT STATISTICS</b>\n\n"
-                "<blockquote>"
-                f"<b>👥 Users:</b> {total_users:,}\n"
-                f"<b>✅ Active:</b> {active_users:,}\n"
-                f"<b>🚫 Banned:</b> {banned_users:,}\n"
-                f"<b>👑 Admins:</b> {len(all_admins)}\n"
-                f"<b>📢 Force Sub:</b> {len(force_sub_channels)}\n"
-                f"<b>💾 DB Channel:</b> {'✅' if db_channel else '❌'}\n\n"
-                f"<i>Updated: {datetime.datetime.now().strftime('%H:%M:%S')}</i>"
-                "</blockquote>"
-            )
-            
-            buttons = [
-                [
-                    InlineKeyboardButton("👥 Users", callback_data="users_menu"),
-                    InlineKeyboardButton("🔄 Refresh", callback_data="refresh_stats")
-                ],
-                [
-                    InlineKeyboardButton("⬅️ Back", callback_data="settings_menu"),
-                    InlineKeyboardButton("❌ Close", callback_data="close")
-                ]
-            ]
-            
-            keyboard = InlineKeyboardMarkup(buttons)
-            
-            try:
-                response = await message.reply_photo(
-                    photo=stats_pic,
-                    caption=stats_text,
-                    reply_markup=keyboard,
-                    parse_mode=enums.ParseMode.HTML
-                )
-            except Exception as e:
-                logger.error(f"Error sending stats photo: {e}")
-                response = await message.reply(
-                    stats_text,
-                    reply_markup=keyboard,
-                    parse_mode=enums.ParseMode.HTML
-                )
-            
-            await self.store_bot_message(user_id, response.id)
-            
-        except Exception as e:
-            logger.error(f"Error in stats command: {e}")
-            response = await message.reply("❌ <b>Error fetching statistics!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-    
-    # ===================================
-    # BAN/UNBAN COMMANDS
-    # ===================================
-    
-    async def banuser_list_command(self, message: Message):
-        """Handle /banuser_list command"""
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-        
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-        
-        try:
-            # Get banned users
-            banned_users = await self.db.get_banned_users()
-            
-            if not banned_users:
-                response = await message.reply("✅ <b>No banned users found!</b>", parse_mode=enums.ParseMode.HTML)
-                await self.store_bot_message(user_id, response.id)
-                return
-            
-            # Format message
-            ban_text = "<b>🚫 𝗕𝗔𝗡𝗡𝗘𝗗 𝗨𝗦𝗘𝗥𝗦 𝗟𝗜𝗦𝗧</b>\n\n<blockquote expandable>"
-            
-            for i, ban in enumerate(banned_users[:10], 1):
-                ban_user_id = ban["user_id"]
-                reason = ban.get("reason", "No reason")
-                banned_date = ban.get("banned_date", "").strftime("%Y-%m-%d") if ban.get("banned_date") else "Unknown"
-                
-                ban_text += f"<b>{i}. ID:</b> <code>{ban_user_id}</code>\n"
-                ban_text += f"   <b>Reason:</b> {reason}\n"
-                ban_text += f"   <b>Date:</b> {banned_date}\n\n"
-            
-            ban_text += f"</blockquote>\n\n<b>📊 Total Banned:</b> {len(banned_users)}"
-            
-            buttons = [
-                [InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu")],
-                [InlineKeyboardButton("ᴄʟᴏsᴇ ✖️", callback_data="close")]
-            ]
-            
-            keyboard = InlineKeyboardMarkup(buttons)
-            
-            response = await message.reply(
-                ban_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-            
-            await self.store_bot_message(user_id, response.id)
-            
-        except Exception as e:
-            logger.error(f"Error in banuser_list command: {e}")
-            response = await message.reply("❌ <b>Error fetching banned users list!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-    
-    async def add_banuser_command(self, message: Message):
-        """Handle /add_banuser command"""
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-        
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-        
-        if len(message.command) < 2:
-            response = await message.reply(
-                "<b>🚫 𝗕𝗔𝗡 𝗨𝗦𝗘𝗥</b>\n\n"
-                "<blockquote>"
-                "<b>Usage:</b> <code>/add_banuser user_id1,user_id2 [reason]</code>\n\n"
-                "<b>Example:</b> <code>/add_banuser 123456789,987654321 Spamming</code>"
-                "</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            await self.store_bot_message(user_id, response.id)
-            return
-        
-        try:
-            args = message.command[1].split(",")
-            reason = " ".join(message.command[2:]) if len(message.command) > 2 else "No reason provided"
-            
-            banned_users = []
-            
-            for arg in args:
-                arg = arg.strip()
-                
-                try:
-                    ban_user_id = int(arg)
-                    
-                    # Check if user exists
-                    if not await self.db.is_user_exist(ban_user_id):
-                        try:
-                            user = await self.get_users(ban_user_id)
-                            await self.db.add_user(ban_user_id, user.first_name, user.username)
-                        except:
-                            pass
-                    
-                    # Ban the user
-                    await self.db.ban_user(ban_user_id, reason)
-                    banned_users.append(str(ban_user_id))
-                    
-                    # Try to notify the user
-                    try:
-                        await self.send_message(
-                            ban_user_id,
-                            f"🚫 <b>ʏᴏᴜ ʜᴀᴠᴇ ʙᴇᴇɴ ʙᴀɴɴᴇᴅ!</b>\n\n"
-                            f"<blockquote>"
-                            f"<b>ʀᴇᴀsᴏɴ:</b> {reason}\n\n"
-                            f"ᴄᴏɴᴛᴀᴄᴛ ᴀᴅᴍɪɴ ɪғ ᴛʜɪs ɪs ᴀ ᴍɪsᴛᴀᴋᴇ."
-                            "</blockquote>",
-                            parse_mode=enums.ParseMode.HTML
-                        )
-                    except:
-                        pass
-                    
-                except ValueError:
-                    await message.reply(f"❌ <b>Invalid user ID:</b> {arg}", parse_mode=enums.ParseMode.HTML)
-                    continue
-            
-            if banned_users:
-                response = await message.reply(
-                    f"✅ <b>Users Banned!</b>\n\n"
-                    f"<blockquote>"
-                    f"<b>Banned {len(banned_users)} user(s):</b>\n"
-                    + "\n".join(f"• {uid}" for uid in banned_users) +
-                    f"\n\n<b>Reason:</b> {reason}"
-                    "</blockquote>",
-                    parse_mode=enums.ParseMode.HTML
-                )
-            else:
-                response = await message.reply("❌ <b>No users were banned!</b>", parse_mode=enums.ParseMode.HTML)
-            
-            await self.store_bot_message(user_id, response.id)
-        
-        except Exception as e:
-            logger.error(f"Error banning users: {e}")
-            response = await message.reply("❌ <b>Error banning users!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-    
-    async def del_banuser_command(self, message: Message):
-        """Handle /del_banuser command"""
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-        
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-        
-        if len(message.command) < 2:
-            response = await message.reply(
-                "<b>✅ 𝗨𝗡𝗕𝗔𝗡 𝗨𝗦𝗘𝗥</b>\n\n"
-                "<blockquote>"
-                "<b>Usage:</b> <code>/del_banuser user_id1,user_id2</code>\n\n"
-                "<b>Example:</b> <code>/del_banuser 123456789,987654321</code>"
-                "</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            await self.store_bot_message(user_id, response.id)
-            return
-        
-        try:
-            args = message.command[1].split(",")
-            unbanned_users = []
-            
-            for arg in args:
-                arg = arg.strip()
-                
-                try:
-                    unban_user_id = int(arg)
-                    
-                    # Check if user is banned
-                    if not await self.db.is_user_banned(unban_user_id):
-                        await message.reply(f"⚠️ <b>User {unban_user_id} is not banned!</b>", parse_mode=enums.ParseMode.HTML)
-                        continue
-                    
-                    # Unban the user
-                    await self.db.unban_user(unban_user_id)
-                    unbanned_users.append(str(unban_user_id))
-                    
-                    # Try to notify the user
-                    try:
-                        await self.send_message(
-                            unban_user_id,
-                            "<b>✅ ʏᴏᴜ ʜᴀᴠᴇ ʙᴇᴇɴ ᴜɴʙᴀɴɴᴇᴅ!</b>\n\n"
-                            "ʏᴏᴜ ᴄᴀɴ ɴᴏᴡ ᴜsᴇ ᴛʜᴇ ʙᴏᴛ ᴀɢᴀɪɴ.",
-                            parse_mode=enums.ParseMode.HTML
-                        )
-                    except:
-                        pass
-                    
-                except ValueError:
-                    await message.reply(f"❌ <b>Invalid user ID: {arg}</b>", parse_mode=enums.ParseMode.HTML)
-                    continue
-            
-            if unbanned_users:
-                response = await message.reply(
-                    f"<b>✅ 𝗨𝗦𝗘𝗥𝗦 𝗨𝗡𝗕𝗔𝗡𝗡𝗘𝗗!</b>\n\n"
-                    f"<blockquote>"
-                    f"<b>Unbanned {len(unbanned_users)} user(s):</b>\n"
-                    + "\n".join(f"• <code>{user_id}</code>" for user_id in unbanned_users) +
-                    "</blockquote>",
-                    parse_mode=enums.ParseMode.HTML
-                )
-            else:
-                response = await message.reply("⚠️ <b>No users were unbanned!</b>", parse_mode=enums.ParseMode.HTML)
-            
-            await self.store_bot_message(user_id, response.id)
-        
-        except Exception as e:
-            logger.error(f"Error unbanning users: {e}")
-            response = await message.reply("❌ <b>Error unbanning users!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
 
-    # ===================================
-    # SETTINGS COMMANDS
-    # ===================================
-
-    async def settings_command(self, message: Message):
-        """
-        Handle /settings command - Admin panel with working buttons
-        
-        IMPLEMENTS: FEATURE 1 (Clean Conversation)
-        """
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        # Get current settings
-        protect_content = settings.get("protect_content", True)
-        auto_delete = settings.get("auto_delete", False)
-        clean_conversation = settings.get("clean_conversation", True)
-        request_fsub = settings.get("request_fsub", False)
-
-        # Get settings picture
-        welcome_pics = settings.get("welcome_pics", Config.WELCOME_PICS)
-        settings_pic = get_random_pic(welcome_pics)
-
-        # Format settings text with blockquote
-        settings_text = (
-            "⚙️ <b>BOT SETTINGS PANEL</b>\n\n"
-            "<blockquote>"
-            f"🔒 <b>Protect Content:</b> {'✅' if protect_content else '❌'}\n"
-            f"🗑️ <b>Auto Delete Files:</b> {'✅' if auto_delete else '❌'}\n"
-            f"💬 <b>Clean Conversation:</b> {'✅' if clean_conversation else '❌'}\n"
-            f"📢 <b>Force Subscribe:</b> {'✅' if request_fsub else '❌'}"
-            "</blockquote>\n\n"
-            "<b>Select a category to configure:</b>"
-        )
-
-        # Create button grid
-        buttons = [
-            [
-                InlineKeyboardButton("📁 ғɪʟᴇs", callback_data="files_settings"),
-                InlineKeyboardButton("🗑️ ᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ", callback_data="auto_delete_settings")
-            ],
-            [
-                InlineKeyboardButton("📢 ғᴏʀᴄᴇ sᴜʙ", callback_data="force_sub_settings"),
-                InlineKeyboardButton("💬 ʙᴏᴛ ᴍsɢs", callback_data="bot_msg_settings")
-            ],
-            [
-                InlineKeyboardButton("📊 sᴛᴀᴛɪsᴛɪᴄs", callback_data="stats_menu"),
-                InlineKeyboardButton("👥 ᴜsᴇʀs", callback_data="users_menu")
-            ],
-            [
-                InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="start_menu"),
-                InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close")
-            ]
-        ]
-
-        keyboard = InlineKeyboardMarkup(buttons)
-
-        try:
-            response = await message.reply_photo(
-                photo=settings_pic,
-                caption=settings_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-        except Exception as e:
-            logger.error(f"Error sending settings photo: {e}")
-            response = await message.reply(
-                settings_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-
-        # FEATURE 1: Store this message for future deletion
-        await self.store_bot_message(user_id, response.id)
-
-    async def files_command(self, message: Message):
-        """
-        Handle /files command - File settings - FIXED
-        
-        IMPLEMENTS: FEATURE 1 (Clean Conversation)
-        """
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-        
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-    
-        # Get current settings
-        protect_content = settings.get("protect_content", True)
-        hide_caption = settings.get("hide_caption", False)
-        channel_button = settings.get("channel_button", True)
-        files_pics = settings.get("files_pics", Config.FILES_PICS)
-    
-        # Get random files picture
-        files_pic = get_random_pic(files_pics)
-    
-        # Create files settings text using helper function - FIXED
-        files_text = create_files_settings_text(protect_content, hide_caption, channel_button)
-        
-        # Create toggle buttons
-        buttons = [
-            [
-                InlineKeyboardButton(f"🔒 ᴘʀᴏᴛᴇᴄᴛ: {'✅' if protect_content else '❌'}", callback_data="toggle_protect_content"),
-                InlineKeyboardButton(f"🫥 ʜɪᴅᴇ: {'✅' if hide_caption else '❌'}", callback_data="toggle_hide_caption")
-            ],
-            [
-                InlineKeyboardButton(f"🔘 ʙᴜᴛᴛᴏɴ: {'✅' if channel_button else '❌'}", callback_data="toggle_channel_button"),
-                InlineKeyboardButton("🔘 ᴄᴜsᴛᴏᴍ ʙᴜᴛᴛᴏɴ", callback_data="custom_buttons_menu")
-            ],
-            [
-                InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu"),
-                InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close")
-            ]
-        ]
-        
-        keyboard = InlineKeyboardMarkup(buttons)
-        
-        try:
-            response = await message.reply_photo(
-                photo=files_pic,
-                caption=files_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-        except Exception as e:
-            logger.error(f"Error sending files photo: {e}")
-            response = await message.reply(
-                files_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-        
-        await self.store_bot_message(user_id, response.id)
-
-    async def auto_del_command(self, message: Message):
-        """
-        Handle /auto_del command - Auto delete settings (THREE FEATURES) - FIXED
-        
-        IMPLEMENTS: FEATURE 1 (Clean Conversation)
-        """
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-    
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-    
-        # Get current settings for ALL THREE FEATURES
-        auto_delete = settings.get("auto_delete", False)
-        auto_delete_time = settings.get("auto_delete_time", 300)
-        clean_conversation = settings.get("clean_conversation", True)
-        show_instruction = settings.get("show_instruction", True)
-        auto_del_pics = settings.get("auto_del_pics", Config.AUTO_DEL_PICS)
-    
-        # Get random auto delete picture
-        auto_del_pic = get_random_pic(auto_del_pics)
-    
-        # Create auto delete text using helper function (shows all 3 features) - FIXED
-        auto_del_text = create_auto_delete_text(
-            auto_delete, 
-            auto_delete_time, 
-            clean_conversation, 
-            show_instruction
-        )
-        
-        buttons = []
-
-        # Toggle buttons for each feature
-        buttons.append([
-            InlineKeyboardButton(f"🗑️ ғɪʟᴇs: {'✅' if auto_delete else '❌'}", callback_data="toggle_auto_delete"),
-            InlineKeyboardButton(f"💬 ᴄʟᴇᴀɴ: {'✅' if clean_conversation else '❌'}", callback_data="toggle_clean_conversation")
-        ])
-        
-        buttons.append([
-            InlineKeyboardButton(f"📝 ɪɴsᴛʀᴜᴄᴛ: {'✅' if show_instruction else '❌'}", callback_data="toggle_show_instruction"),
-            InlineKeyboardButton("⏱️ sᴇᴛ ᴛɪᴍᴇʀ", callback_data="set_timer")
-        ])
-
-        # Time buttons (only show if auto delete files is enabled)
-        if auto_delete:
-            time_row1 = []
-            time_row2 = []
-            
-            for i, time_sec in enumerate(AUTO_DELETE_TIMES):
-                time_display = format_time(time_sec)
-                btn = InlineKeyboardButton(
-                    f"{'✅ ' if time_sec == auto_delete_time else ''}{time_display}", 
-                    callback_data=f"autodel_{time_sec}"
-                )
-                if i < 3:
-                    time_row1.append(btn)
-                else:
-                    time_row2.append(btn)
-            
-            if time_row1:
-                buttons.append(time_row1)
-            if time_row2:
-                buttons.append(time_row2)
-        
-        buttons.append([
-            InlineKeyboardButton("🔄 ʀᴇғʀᴇsʜ", callback_data="refresh_autodel"),
-            InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu")
-        ])
-        
-        buttons.append([
-            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close")
-        ])
-        
-        keyboard = InlineKeyboardMarkup(buttons)
-        
-        try:
-            response = await message.reply_photo(
-                photo=auto_del_pic,
-                caption=auto_del_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-        except Exception as e:
-            logger.error(f"Error sending auto delete photo: {e}")
-            response = await message.reply(
-                auto_del_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-        
-        await self.store_bot_message(user_id, response.id)
-
-    async def botsettings_command(self, message: Message):
-        """
-        Handle /botsettings command - Bot message settings
-        
-        IMPLEMENTS: FEATURE 1 (Clean Conversation)
-        """
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-            
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-        
-        # Get current settings
-        clean_conversation = settings.get("clean_conversation", True)
-        show_instruction = settings.get("show_instruction", True)
-        welcome_pics = settings.get("welcome_pics", Config.WELCOME_PICS)
-        
-        # Get random picture
-        settings_pic = get_random_pic(welcome_pics)
-        
-        settings_text = (
-            "<b>🤖 BOT MESSAGE SETTINGS</b>\n\n"
-            "<blockquote>"
-            f"<b>💬 Clean Conversation:</b> {'✅ ENABLED' if clean_conversation else '❌ DISABLED'}\n"
-            f"<b>📝 Show Instruction:</b> {'✅ ENABLED' if show_instruction else '❌ DISABLED'}"
-            "</blockquote>\n\n"
-            "<b>Feature Explanation:</b>\n"
-            "<blockquote expandable>"
-            "<b>Clean Conversation:</b>\n"
-            "Deletes previous bot message when sending new one. Keeps PM clean.\n\n"
-            "<b>Show Instruction:</b>\n"
-            "After files are deleted, shows instruction message with resend button. This message is NOT auto-deleted."
-            "</blockquote>"
-        )
-        
-        buttons = [
-            [
-                InlineKeyboardButton(f"💬 {'✅' if clean_conversation else '❌'}", callback_data="toggle_clean_conversation"),
-                InlineKeyboardButton(f"📝 {'✅' if show_instruction else '❌'}", callback_data="toggle_show_instruction")
-            ],
-            [
-                InlineKeyboardButton("🔙 ʙᴀᴄᴋ", callback_data="settings_menu"),
-                InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close")
-            ]
-        ]
-        
-        keyboard = InlineKeyboardMarkup(buttons)
-        
-        try:
-            response = await message.reply_photo(
-                photo=settings_pic,
-                caption=settings_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-        except Exception as e:
-            logger.error(f"Error sending bot settings photo: {e}")
-            response = await message.reply(
-                settings_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-        
-        await self.store_bot_message(user_id, response.id)
-
-    # ===================================
-    # BAN/UNBAN COMMANDS
-    # ===================================
-
-    async def ban_command(self, message: Message):
-        """Handle /ban command"""
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        if len(message.command) < 2:
-            response = await message.reply(
-                "🚫 <b>BAN USER</b>\n\n"
-                "<blockquote>"
-                "<b>Usage:</b> <code>/ban user_id [reason]</code>\n\n"
-                "<b>Example:</b> <code>/ban 123456789 Spamming</code>"
-                "</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        try:
-            ban_user_id = int(message.command[1])
-            reason = " ".join(message.command[2:]) if len(message.command) > 2 else "No reason provided"
-
-            # Check if user exists
-            try:
-                user = await self.get_users(ban_user_id)
-            except:
-                response = await message.reply("❌ <b>User not found!</b>", parse_mode=enums.ParseMode.HTML)
-                await self.store_bot_message(user_id, response.id)
-                return
-
-            # Ban the user
-            await self.db.ban_user(ban_user_id, reason)
-
-            # Try to notify the user
-            try:
-                await self.send_message(
-                    ban_user_id,
-                    f"🚫 <b>You have been banned!</b>\n\n"
-                    f"<blockquote>"
-                    f"<b>Reason:</b> {reason}\n\n"
-                    f"Contact admin if this is a mistake."
-                    f"</blockquote>",
-                    parse_mode=enums.ParseMode.HTML
-                )
-            except:
-                pass
-
-            response = await message.reply(
-                f"✅ <b>User Banned!</b>\n\n"
-                f"<blockquote>"
-                f"<b>👤 User:</b> {user.first_name}\n"
-                f"<b>🆔 ID:</b> <code>{ban_user_id}</code>\n"
-                f"<b>📝 Reason:</b> {reason}"
-                f"</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-
-            await self.store_bot_message(user_id, response.id)
-
-        except ValueError:
-            response = await message.reply("❌ <b>Invalid user ID!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-        except Exception as e:
-            logger.error(f"Error banning user: {e}")
-            response = await message.reply("❌ <b>Error banning user!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-
-    async def unban_command(self, message: Message):
-        """Handle /unban command"""
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        if len(message.command) < 2:
-            response = await message.reply(
-                "✅ <b>UNBAN USER</b>\n\n"
-                "<blockquote>"
-                "<b>Usage:</b> <code>/unban user_id</code>\n\n"
-                "<b>Example:</b> <code>/unban 123456789</code>"
-                "</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        try:
-            unban_user_id = int(message.command[1])
-
-            # Check if user is banned
-            if not await self.db.is_user_banned(unban_user_id):
-                response = await message.reply("⚠️ <b>User is not banned!</b>", parse_mode=enums.ParseMode.HTML)
-                await self.store_bot_message(user_id, response.id)
-                return
-
-            # Unban the user
-            await self.db.unban_user(unban_user_id)
-
-            # Try to notify the user
-            try:
-                await self.send_message(
-                    unban_user_id,
-                    "✅ <b>You have been unbanned!</b>\n\n"
-                    "You can now use the bot again.",
-                    parse_mode=enums.ParseMode.HTML
-                )
-            except:
-                pass
-
-            response = await message.reply(
-                f"✅ <b>User Unbanned!</b>\n\n"
-                f"<blockquote>"
-                f"<b>🆔 User ID:</b> <code>{unban_user_id}</code>\n"
-                f"<b>✅ Status:</b> Unbanned"
-                f"</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-
-            await self.store_bot_message(user_id, response.id)
-
-        except ValueError:
-            response = await message.reply("❌ <b>Invalid user ID!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-        except Exception as e:
-            logger.error(f"Error unbanning user: {e}")
-            response = await message.reply("❌ <b>Error unbanning user!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-
-    # ===================================
-    # FILE MANAGEMENT COMMANDS (FIXED VERSION)
-    # ===================================
-
-    async def genlink_command(self, message: Message):
-        """
-        Handle /genlink command - FIXED VERSION
-        
-        FIXES:
-        1. Checks if bot is admin in database channel
-        2. Properly generates working links
-        3. Handles errors correctly
-        """
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        if not message.reply_to_message:
-            response = await message.reply(
-                "🔗 <b>GENERATE LINK</b>\n\n"
-                "<blockquote>"
-                "<b>How to use:</b>\n"
-                "Reply to a file with /genlink to create a shareable link"
-                "</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        if not self.db_channel:
-            response = await message.reply("❌ <b>Set database channel first!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        try:
-            # Check if bot is admin in database channel
-            try:
-                me = await self.get_me()
-                bot_id = me.id
-                member = await self.get_chat_member(self.db_channel, bot_id)
-                if member.status not in ["administrator", "creator"]:
-                    # Bot is not admin - cannot forward message
-                    response = await message.reply("❌ <b>Bot is not admin in the database channel!</b>", parse_mode=enums.ParseMode.HTML)
-                    await self.store_bot_message(user_id, response.id)
-                    return
-            except Exception as e:
-                logger.error(f"Error checking admin status: {e}")
-                response = await message.reply("❌ <b>Cannot access database channel!</b>", parse_mode=enums.ParseMode.HTML)
-                await self.store_bot_message(user_id, response.id)
-                return
-
-            # Forward message to database channel
-            try:
-                forwarded = await message.reply_to_message.forward(self.db_channel)
-                
-                # Generate link
-                base64_id = await encode(str(forwarded.id))  # FIXED: Encode only the message ID
-                bot_username = Config.BOT_USERNAME
-                link = f"https://t.me/{bot_username}?start={base64_id}"  # FIXED: Use direct encoded ID
-
-                response = await message.reply(
-                    f"✅ <b>Link Generated!</b>\n\n"
-                    f"<blockquote>"
-                    f"<b>🔗 Link:</b>\n"
-                    f"<code>{link}</code>\n\n"
-                    f"<b>📁 File ID:</b> <code>{forwarded.id}</code>"
-                    f"</blockquote>",
-                    parse_mode=enums.ParseMode.HTML,
-                    disable_web_page_preview=True
-                )
-
-                await self.store_bot_message(user_id, response.id)
-
-            except Exception as e:
-                logger.error(f"Error forwarding message: {e}")
-                response = await message.reply("❌ <b>Error forwarding message to database channel!</b>", parse_mode=enums.ParseMode.HTML)
-                await self.store_bot_message(user_id, response.id)
-
-        except Exception as e:
-            logger.error(f"Error generating link: {e}")
-            response = await message.reply("❌ <b>Error generating link!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-
-    async def getlink_command(self, message: Message):
-        """Handle /getlink command - Alias for genlink"""
-        await self.genlink_command(message)
-
-    # ===================================
-    # BATCH COMMAND - FIXED VERSION
-    # ===================================
-    
-    async def batch_command(self, message: Message):
-        """
-        Handle /batch command - First/Last Message Method
-        
-        IMPLEMENTS: FEATURE 1 (Clean Conversation)
-        """
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        if not self.db_channel:
-            response = await message.reply("❌ <b>Set database channel first!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # Initialize batch state with FIRST/LAST method
-        self.batch_state[user_id] = {
-            "method": "first_last",  # NEW: Method identifier
-            "step": "waiting_first",  # NEW: Current step
-            "first_msg_id": None,
-            "last_msg_id": None,
-            "channel_id": self.db_channel
-        }
-
-        response = await message.reply(
-            "📁 <b>BATCH MODE STARTED</b>\n\n"
-            "<blockquote>"
-            f"<b>Method:</b> First/Last Message\n"
-            f"<b>Max files:</b> {MAX_BATCH_SIZE}\n\n"
-            f"<b>📝 Step 1:</b>\n"
-            "Go to your database channel and forward the <b>FIRST message</b> (starting file) to me.\n\n"
-            f"<i>Example: If you want Episodes 1-50, forward Episode 1</i>"
-            "</blockquote>",
-            parse_mode=enums.ParseMode.HTML
-        )
-
-        await self.store_bot_message(user_id, response.id)
-
-    # ===================================
-    # CHANNEL MANAGEMENT COMMANDS (FIXED)
-    # ===================================
-
-    async def setchannel_command(self, message: Message):
-        """Handle /setchannel command"""
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        if len(message.command) < 2:
-            response = await message.reply(
-                "📺 <b>SET DATABASE CHANNEL</b>\n\n"
-                "<blockquote>"
-                "<b>Usage:</b> <code>/setchannel channel_id</code>\n\n"
-                "<b>Example:</b> <code>/setchannel -1001234567890</code>\n\n"
-                "<b>How to get Channel ID:</b>\n"
-                "1. Add @RawDataBot to your channel\n"
-                "2. Send any message\n"
-                "3. Copy the chat_id (it will be negative)"
-                "</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        try:
-            channel_id = int(message.command[1])
-
-            # Check if bot is admin in channel
-            try:
-                chat = await self.get_chat(channel_id)
-                me = await self.get_me()
-                member = await self.get_chat_member(channel_id, me.id)
-                
-                if member.status not in ["administrator", "creator"]:
-                    response = await message.reply("❌ <b>Bot must be admin in the channel!</b>", parse_mode=enums.ParseMode.HTML)
-                    await self.store_bot_message(user_id, response.id)
-                    return
-
-            except Exception as e:
-                response = await message.reply(f"❌ <b>Error accessing channel:</b>\n<code>{e}</code>", parse_mode=enums.ParseMode.HTML)
-                await self.store_bot_message(user_id, response.id)
-                return
-
-            # Set database channel
-            await self.db.set_db_channel(channel_id)
-            self.db_channel = channel_id
-
-            response = await message.reply(
-                f"✅ <b>Database Channel Set!</b>\n\n"
-                f"<blockquote>"
-                f"<b>📺 Channel:</b> {chat.title}\n"
-                f"<b>🆔 ID:</b> <code>{channel_id}</code>\n"
-                f"<b>👤 Username:</b> @{chat.username if chat.username else 'Private'}"
-                f"</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-
-            await self.store_bot_message(user_id, response.id)
-
-        except ValueError:
-            response = await message.reply("❌ <b>Invalid channel ID!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-        except Exception as e:
-            logger.error(f"Error setting channel: {e}")
-            response = await message.reply("❌ <b>Error setting channel!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-
-    async def checkchannel_command(self, message: Message):
-        """
-        Handle /checkchannel command - FIXED VERSION
-        
-        FIXED: Now properly checks if bot is admin in the channel
-        """
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        if not self.db_channel:
-            response = await message.reply("❌ <b>No database channel set!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        try:
-            chat = await self.get_chat(self.db_channel)
-            me = await self.get_me()
-            bot_id = me.id
-            
-            # FIXED: Check bot's admin status in the channel
-            try:
-                member = await self.get_chat_member(self.db_channel, bot_id)
-                
-                if member.status == "creator":
-                    status = "✅ Creator (Owner)"
-                    bot_permissions = "✅ Full access"
-                elif member.status == "administrator":
-                    status = "✅ Administrator"
-                    permissions = []
-                    if member.privileges:
-                        if getattr(member.privileges, 'can_post_messages', False):
-                            permissions.append("📝 Post")
-                        if getattr(member.privileges, 'can_delete_messages', False):
-                            permissions.append("🗑️ Delete")
-                    bot_permissions = "✅ " + ", ".join(permissions) if permissions else "✅ Admin"
-                else:
-                    status = f"❌ Not Admin (Status: {member.status})"
-                    bot_permissions = "❌ No access"
-                    
-            except Exception as e:
-                logger.error(f"Error checking admin: {e}")
-                status = "⚠️ Error"
-                bot_permissions = f"⚠️ {str(e)[:50]}"
-
-            response = await message.reply(
-                f"📊 <b>CHANNEL STATUS</b>\n\n"
-                f"<blockquote>"
-                f"<b>📺 Channel:</b> {chat.title}\n"
-                f"<b>🆔 ID:</b> <code>{self.db_channel}</code>\n"
-                f"<b>👤 Username:</b> @{chat.username if chat.username else 'Private'}\n"
-                f"<b>🤖 Bot Status:</b> {status}\n"
-                f"<b>🔧 Permissions:</b> {bot_permissions}\n"
-                f"<b>👥 Members:</b> {getattr(chat, 'members_count', 'Unknown')}"
-                f"</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-
-            await self.store_bot_message(user_id, response.id)
-
-        except Exception as e:
-            logger.error(f"Error checking channel: {e}")
-            response = await message.reply(
-                f"❌ <b>Error checking channel</b>\n\n<blockquote>{str(e)[:100]}</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            await self.store_bot_message(user_id, response.id)
-
-    async def removechannel_command(self, message: Message):
-        """Handle /removechannel command"""
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        if not self.db_channel:
-            response = await message.reply("❌ <b>No database channel to remove!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        try:
-            old_channel_id = self.db_channel
-            
-            # Remove database channel
-            await self.db.remove_db_channel()
-            self.db_channel = None
-
-            response = await message.reply(
-                f"✅ <b>Database Channel Removed!</b>\n\n"
-                f"<blockquote>"
-                f"<b>🆔 Channel ID:</b> <code>{old_channel_id}</code>\n"
-                f"<b>🗑️ Status:</b> Removed"
-                f"</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-
-            await self.store_bot_message(user_id, response.id)
-
-        except Exception as e:
-            logger.error(f"Error removing channel: {e}")
-            response = await message.reply("❌ <b>Error removing channel!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-
-    # ===================================
-    # FORCE SUBSCRIBE COMMANDS
-    # ===================================
-
-    async def forcesub_command(self, message: Message):
-        """Handle /forcesub command"""
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        # Get current force sub channels
-        force_sub_channels = await self.db.get_force_sub_channels()
-        
-        # Get force sub pictures
-        force_sub_pics = settings.get("force_sub_pics", Config.FORCE_SUB_PICS)
-        force_sub_pic = get_random_pic(force_sub_pics)
-        
-        # Check request_fsub setting
-        request_fsub = settings.get("request_fsub", False)
-        request_status = "✅ ENABLED" if request_fsub else "❌ DISABLED"
-        
-        # Format message
-        if force_sub_channels:
-            channels_text = "<b>📢 FORCE SUBSCRIBE SETTINGS</b>\n\n"
-            channels_text += f"🔄 <b>Request FSub:</b> {request_status}\n\n"
-            channels_text += "<b>Current Channels:</b>\n"
-            
-            for i, channel in enumerate(force_sub_channels, 1):
-                channel_id = channel.get("channel_id")
-                username = channel.get("channel_username", "No username")
-                
-                channels_text += f"{i}. <b>Channel ID:</b> <code>{channel_id}</code>\n"
-                channels_text += f"   <b>Username:</b> @{username}\n\n"
-            
-            channels_text += f"📊 <b>Total Channels:</b> {len(force_sub_channels)}"
-        else:
-            channels_text = "<b>📢 FORCE SUBSCRIBE SETTINGS</b>\n\n"
-            channels_text += f"🔄 <b>Request FSub:</b> {request_status}\n\n"
-            channels_text += "No force subscribe channels configured.\n"
-            channels_text += "Use /add_fsub to add channels."
-        
-        # Create buttons
-        buttons = []
-        
-        # Toggle Request FSub
-        if request_fsub:
-            buttons.append([
-                InlineKeyboardButton("❌ DISABLE FSUB", callback_data="reqfsub_off"),
-                InlineKeyboardButton("⚙️ CHANNELS", callback_data="fsub_chnl_menu")
-            ])
-        else:
-            buttons.append([
-                InlineKeyboardButton("✅ ENABLE FSUB", callback_data="reqfsub_on"),
-                InlineKeyboardButton("⚙️ CHANNELS", callback_data="fsub_chnl_menu")
-            ])
-        
-        # Management buttons
-        buttons.append([
-            InlineKeyboardButton("➕ ADD CHANNEL", callback_data="add_fsub_menu"),
-            InlineKeyboardButton("➖ REMOVE CHANNEL", callback_data="del_fsub_menu")  # FIXED: Now works
-        ])
-        
-        buttons.append([
-            InlineKeyboardButton("🔄 REFRESH", callback_data="refresh_fsub"),
-            InlineKeyboardButton("📊 TEST", callback_data="test_fsub")
-        ])
-        
-        buttons.append([
-            InlineKeyboardButton("🔙 BACK", callback_data="settings_menu"),
-            InlineKeyboardButton("❌ CLOSE", callback_data="close")
-        ])
-        
-        keyboard = InlineKeyboardMarkup(buttons)
-        
-        try:
-            response = await message.reply_photo(
-                photo=force_sub_pic,
-                caption=channels_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-        except Exception as e:
-            logger.error(f"Error sending forcesub photo: {e}")
-            response = await message.reply(
-                channels_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-        
-        await self.store_bot_message(user_id, response.id)
-
-    async def req_fsub_command(self, message: Message):
-        """Handle /req_fsub command"""
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        # Get current settings
-        request_fsub = settings.get("request_fsub", False)
-        force_sub_pics = settings.get("force_sub_pics", Config.FORCE_SUB_PICS)
-        
-        # Get random force sub picture
-        force_sub_pic = get_random_pic(force_sub_pics)
-        
-        # Format
-        status = "✅ ENABLED" if request_fsub else "❌ DISABLED"
-        
-        req_fsub_text = (
-            "<b>📢 REQUEST FSUB SETTINGS</b>\n\n"
-            f"<blockquote>"
-            f"<b>Status:</b> {status}\n\n"
-            f"<i>When enabled, users must join all force subscribe channels before using the bot.</i>"
-            f"</blockquote>"
-        )
-        
-        # Create toggle buttons
-        buttons = []
-        
-        if request_fsub:
-            buttons.append([
-                InlineKeyboardButton("❌ DISABLE", callback_data="reqfsub_off"),
-                InlineKeyboardButton("⚙️ CHANNELS", callback_data="fsub_chnl_menu")
-            ])
-        else:
-            buttons.append([
-                InlineKeyboardButton("✅ ENABLE", callback_data="reqfsub_on"),
-                InlineKeyboardButton("⚙️ CHANNELS", callback_data="fsub_chnl_menu")
-            ])
-        
-        buttons.append([
-            InlineKeyboardButton("🔙 BACK", callback_data="settings_menu"),
-            InlineKeyboardButton("❌ CLOSE", callback_data="close")
-        ])
-        
-        keyboard = InlineKeyboardMarkup(buttons)
-        
-        try:
-            response = await message.reply_photo(
-                photo=force_sub_pic,
-                caption=req_fsub_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-        except Exception as e:
-            logger.error(f"Error sending force sub photo: {e}")
-            response = await message.reply(
-                req_fsub_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-        
-        await self.store_bot_message(user_id, response.id)
-
-    async def fsub_chnl_command(self, message: Message):
-        """Handle /fsub_chnl command"""
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        # Get force sub channels
-        force_sub_channels = await self.db.get_force_sub_channels()
-        
-        # Get force sub pictures
-        force_sub_pics = settings.get("force_sub_pics", Config.FORCE_SUB_PICS)
-        force_sub_pic = get_random_pic(force_sub_pics)
-        
-        # Format message
-        if force_sub_channels:
-            channels_text = "<b>📢 FORCE SUBSCRIBE CHANNELS</b>\n\n"
-            channels_text += "<blockquote>"
-            
-            for i, channel in enumerate(force_sub_channels, 1):
-                channel_id = channel.get("channel_id")
-                username = channel.get("channel_username", "No username")
-                
-                channels_text += f"<b>{i}. Channel ID:</b> <code>{channel_id}</code>\n"
-                channels_text += f"   <b>Username:</b> @{username}\n\n"
-            
-            channels_text += f"</blockquote>\n\n"
-            channels_text += f"📊 <b>Total Channels:</b> {len(force_sub_channels)}"
-        else:
-            channels_text = "<b>📢 FORCE SUBSCRIBE CHANNELS</b>\n\n"
-            channels_text += "<blockquote>"
-            channels_text += "No force subscribe channels configured.\n"
-            channels_text += "Use /add_fsub to add channels."
-            channels_text += "</blockquote>"
-        
-        # Create buttons
-        buttons = []
-        
-        if force_sub_channels:
-            buttons.append([
-                InlineKeyboardButton("➕ ADD CHANNEL", callback_data="add_fsub_menu"),
-                InlineKeyboardButton("➖ REMOVE CHANNEL", callback_data="del_fsub_menu")
-            ])
-        else:
-            buttons.append([
-                InlineKeyboardButton("➕ ADD CHANNEL", callback_data="add_fsub_menu")
-            ])
-        
-        buttons.append([
-            InlineKeyboardButton("🔄 REFRESH", callback_data="refresh_fsub"),
-            InlineKeyboardButton("🔙 BACK", callback_data="force_sub_settings")
-        ])
-        
-        buttons.append([
-            InlineKeyboardButton("❌ CLOSE", callback_data="close")
-        ])
-        
-        keyboard = InlineKeyboardMarkup(buttons)
-        
-        try:
-            response = await message.reply_photo(
-                photo=force_sub_pic,
-                caption=channels_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-        except Exception as e:
-            logger.error(f"Error sending fsub channels photo: {e}")
-            response = await message.reply(
-                channels_text,
-                reply_markup=keyboard,
-                parse_mode=enums.ParseMode.HTML
-            )
-        
-        await self.store_bot_message(user_id, response.id)
-
-    async def add_fsub_command(self, message: Message):
-        """Handle /add_fsub command"""
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        if len(message.command) < 2:
-            response = await message.reply(
-                "➕ <b>ADD FORCE SUB CHANNEL</b>\n\n"
-                "<blockquote>"
-                "<b>Usage:</b> <code>/add_fsub channel_id [username]</code>\n\n"
-                "<b>Examples:</b>\n"
-                "<code>/add_fsub -100123456789 @channel_username</code>\n"
-                "<code>/add_fsub -100123456789</code>\n\n"
-                "<b>Note:</b> Bot must be admin in the channel!"
-                "</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        try:
-            channel_id = int(message.command[1])
-            username = message.command[2] if len(message.command) > 2 else None
-            
-            if username:
-                username = username.lstrip('@')
-            
-            # Check if bot is admin in channel
-            try:
-                me = await self.get_me()
-                await self.get_chat_member(channel_id, me.id)
-            except Exception as e:
-                response = await message.reply(f"❌ <b>Bot is not admin in channel {channel_id}!</b>", parse_mode=enums.ParseMode.HTML)
-                await self.store_bot_message(user_id, response.id)
-                return
-            
-            # Add channel to database
-            await self.db.add_force_sub_channel(channel_id, username)
-            
-            # Update local cache
-            self.force_sub_channels = await self.db.get_force_sub_channels()
-            
-            response = await message.reply(
-                f"✅ <b>Channel Added!</b>\n\n"
-                f"<blockquote>"
-                f"<b>📢 Channel ID:</b> <code>{channel_id}</code>\n"
-                f"<b>👤 Username:</b> @{username if username else 'Private'}\n\n"
-                f"<b>Total channels:</b> {len(self.force_sub_channels)}"
-                f"</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            
-            await self.store_bot_message(user_id, response.id)
-            
-        except ValueError:
-            response = await message.reply("❌ <b>Invalid channel ID! Must be a number.</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-        except Exception as e:
-            logger.error(f"Error adding force sub channel: {e}")
-            response = await message.reply("❌ <b>Error adding channel!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-
-    async def del_fsub_command(self, message: Message):
-        """Handle /del_fsub command"""
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        if len(message.command) < 2:
-            response = await message.reply(
-                "➖ <b>REMOVE FORCE SUB CHANNEL</b>\n\n"
-                "<blockquote>"
-                "<b>Usage:</b> <code>/del_fsub channel_id</code>\n\n"
-                "<b>Example:</b> <code>/del_fsub -100123456789</code>"
-                "</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        try:
-            channel_id = int(message.command[1])
-            
-            # Remove channel from database
-            await self.db.remove_force_sub_channel(channel_id)
-            
-            # Update local cache
-            self.force_sub_channels = await self.db.get_force_sub_channels()
-            
-            response = await message.reply(
-                f"✅ <b>Channel Removed!</b>\n\n"
-                f"<blockquote>"
-                f"<b>📢 Channel ID:</b> <code>{channel_id}</code>\n\n"
-                f"<b>Remaining channels:</b> {len(self.force_sub_channels)}"
-                f"</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            
-            await self.store_bot_message(user_id, response.id)
-            
-        except ValueError:
-            response = await message.reply("❌ <b>Invalid channel ID!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-        except Exception as e:
-            logger.error(f"Error removing force sub channel: {e}")
-            response = await message.reply("❌ <b>Error removing channel!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-
-    # ===================================
-    # BROADCAST COMMAND
-    # ===================================
-
-    async def broadcast_command(self, message: Message):
-        """
-        Handle /broadcast command
-        
-        IMPLEMENTS: FEATURE 1 (Clean Conversation)
-        """
-        user_id = message.from_user.id
-        
-        # Check admin permission
-        if not await self.is_user_admin(user_id):
-            response = await message.reply("❌ <b>Admin only!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        # FEATURE 1: Delete previous bot message
-        settings = await self.db.get_settings()
-        if settings.get("clean_conversation", True):
-            await self.delete_previous_bot_message(user_id)
-
-        if not message.reply_to_message:
-            response = await message.reply(
-                "📢 <b>BROADCAST MESSAGE</b>\n\n"
-                "<blockquote>"
-                "<b>How to use:</b>\n"
-                "1. Send your message (text, photo, video, etc.)\n"
-                "2. Reply to that message with /broadcast\n\n"
-                "<b>Example:</b>\n"
-                "Your broadcast message here...\n"
-                "/broadcast"
-                "</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-            await self.store_bot_message(user_id, response.id)
-            return
-
-        try:
-            # Get all users
-            users = await self.db.get_all_users()
-            total_users = len(users)
-
-            if total_users == 0:
-                response = await message.reply("❌ <b>No users to broadcast to!</b>", parse_mode=enums.ParseMode.HTML)
-                await self.store_bot_message(user_id, response.id)
-                return
-
-            response = await message.reply(f"📢 <b>Broadcasting to {total_users:,} users...</b>", parse_mode=enums.ParseMode.HTML)
-
-            success = 0
-            failed = 0
-
-            # Send to all users
-            for target_user_id in users:
-                try:
-                    # Skip if user is banned
-                    if await self.db.is_user_banned(target_user_id):
-                        failed += 1
-                        continue
-
-                    # Forward the message
-                    await message.reply_to_message.forward(target_user_id)
-                    success += 1
-
-                    # Small delay to avoid flood
-                    await asyncio.sleep(0.1)
-
-                except Exception as e:
-                    failed += 1
-                    logger.error(f"Failed to send to {target_user_id}: {e}")
-
-            await response.edit_text(
-                f"✅ <b>Broadcast Complete!</b>\n\n"
-                f"<blockquote>"
-                f"<b>📊 Total Users:</b> {total_users:,}\n"
-                f"<b>✅ Success:</b> {success:,}\n"
-                f"<b>❌ Failed:</b> {failed:,}\n"
-                f"<b>📈 Success Rate:</b> {(success/total_users*100):.1f}%"
-                f"</blockquote>",
-                parse_mode=enums.ParseMode.HTML
-            )
-
-            await self.store_bot_message(user_id, response.id)
-
-        except Exception as e:
-            logger.error(f"Error in broadcast command: {e}")
-            response = await message.reply("❌ <b>Error during broadcast!</b>", parse_mode=enums.ParseMode.HTML)
-            await self.store_bot_message(user_id, response.id)
-
-    # ===================================
-    # BOT STARTUP & MAIN LOOP
-    # ===================================
+# ===================================
+# BOT STARTUP & MAIN LOOP
+# ===================================
 
 async def main():
     """Main function to start the bot"""
@@ -5967,3 +5974,4 @@ async def main():
 if __name__ == "__main__":
     # Run the bot
     asyncio.run(main())
+
